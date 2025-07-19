@@ -1,6 +1,7 @@
 import React from 'react';
 import { create } from 'zustand';
 import { Mail, Lock, Star, Wand2, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 
 // Zustand store for login state
 const useLoginStore = create((set) => ({
@@ -35,6 +36,9 @@ const WizardLoginPage = () => {
     setErrorMessage,
     resetLoginForm
   } = useLoginStore();
+
+  // Initialize the useNavigate hook
+  const navigate = useNavigate();
 
   const handleInputChange = (field, value) => {
     setLoginFormData({ [field]: value });
@@ -95,8 +99,8 @@ const WizardLoginPage = () => {
           () => {
             resetLoginForm();
             setLoading(false);
-            // Example: Redirect to dashboard or home page
-            // window.location.href = '/dashboard';
+            // Navigate to /dashboard on successful login and message box close
+            navigate('/dashboard');
           }
         );
       } else {
@@ -202,9 +206,13 @@ const WizardLoginPage = () => {
             <div className="text-center mt-6">
               <p className="text-gray-700">
                 New to Hogwarts?{' '}
-                <a href="/register" className="text-amber-600 hover:underline font-bold">
+                {/* Use navigate for a better SPA experience */}
+                <span
+                  onClick={() => navigate('/register')}
+                  className="text-amber-600 hover:underline font-bold cursor-pointer"
+                >
                   Register here!
-                </a>
+                </span>
               </p>
             </div>
           </form>

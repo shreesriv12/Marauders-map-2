@@ -8,6 +8,7 @@ import GreatHallPage from './pages/GreatHallPage';
 import VirtualTourPage from './pages/VirtualTourPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Dashoard from './pages/Dashboard';
 // ...other pages
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
             <Route path='/register' element={<Register />} />
             <Route path="/greathall" element={<GreatHallPage />} />
             <Route path="/virtual-tour" element={<VirtualTourPage />} />
+            <Route path="/dashboard" element={<Dashoard />} />
             {/* ... other routes */}
           </Routes>
         </main>

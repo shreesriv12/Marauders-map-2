@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { create } from 'zustand';
 import { Camera, Upload, Wand2, Home, User, Mail, Lock, LockKeyhole, Calendar, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 
 // Zustand store for registration state
 const useRegistrationStore = create((set) => ({
@@ -58,6 +59,9 @@ const WizardRegistration = () => {
     setLoading,
     resetForm
   } = useRegistrationStore();
+
+  // Initialize the useNavigate hook
+  const navigate = useNavigate();
 
   const [sortingQuizActive, setSortingQuizActive] = useState(false);
   const [currentQuizQuestion, setCurrentQuizQuestion] = useState(0);
@@ -288,6 +292,8 @@ const WizardRegistration = () => {
           () => {
             resetForm();
             setLoading(false);
+            // Navigate to /dashboard on successful registration and message box close
+            navigate('/dashboard');
           }
         );
       } else {
@@ -333,6 +339,7 @@ const WizardRegistration = () => {
     }
   };
 
+  // If sorting quiz is active, render the quiz interface
   if (sortingQuizActive) {
     const currentQ = sortingQuestions[currentQuizQuestion];
     return (
@@ -366,6 +373,7 @@ const WizardRegistration = () => {
     );
   }
 
+  // Main registration form rendering
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4 font-inter">
       <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-3xl shadow-2xl max-w-4xl w-full border-4 border-amber-400 overflow-hidden">
