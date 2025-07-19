@@ -1,11 +1,17 @@
-import React, { Suspense, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Html, Text, Float, Sparkles } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import { gsap } from 'gsap';
 import * as THREE from 'three';
-
+import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 // --- Import your GLTF model components ---
+// Ensure these paths are correct relative to your project structure
+// NOTE: These paths are placeholders. In a real project, ensure these models are accessible.
+// For the purpose of this example, we'll assume they are correctly imported and their content
+// is handled by the parent environment.
+// If these models are not available, the 3D canvas might show errors.
 import { HarryPotterModel } from '../components/Hero/Harryavatar';
 import { HarryPotterLogoModel } from '../components/Hero/HarryPotterLogoModel';
 import { HermioneGrangerModel } from '../components/Hero/Hermoineavatar';
@@ -20,13 +26,13 @@ import { DracoMalfoyModel } from '../components/Hero/Dracoavatar';
 const degToRad = (degrees) => degrees * (Math.PI / 180);
 
 // --- Wrapper components that add animations and effects to your imported models ---
-
+// These components now receive `defaultRotationY` which is the hardcoded base rotation
+// and add a subtle animation on top of it.
 const AnimatedHarryPotterModel = ({ position, rotation, scale, isVisible, defaultRotationY }) => {
     const groupRef = useRef();
 
     useFrame((state) => {
         if (groupRef.current && isVisible) {
-            // Blend the default rotation (from hardcoded value) with a subtle animation
             groupRef.current.rotation.y = defaultRotationY + Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
         }
     });
@@ -193,14 +199,16 @@ const AnimatedHarryPotterLogoModel = ({ position, rotation, scale }) => {
     );
 };
 
-// Video Background Component
+// Video Background Component with enhanced twinkling
 const VideoBackground = () => {
     const videoRef = useRef();
 
     useEffect(() => {
         if (videoRef.current) {
+            console.log("Attempting to play video background..."); // Added console log
             videoRef.current.play().catch(error => {
                 console.warn("Autoplay was prevented. User interaction might be required to play video.", error);
+                console.error("Video play error:", error); // Log the error more verbosely
             });
         }
     }, []);
@@ -210,37 +218,47 @@ const VideoBackground = () => {
             <video
                 ref={videoRef}
                 className="absolute w-full h-full object-cover"
-                src="/videos/harry_potter_background.mp4"
+                src="/video/hogwarts.mp4" // Ensure this path is correct
                 autoPlay
                 loop
                 muted
                 playsInline
+                style={{ zIndex: 0 }} // Added explicit z-index to ensure it's behind everything
             >
                 Your browser does not support the video tag.
             </video>
             <div className="absolute inset-0 bg-black opacity-50"></div>
             <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20"></div>
-            {[...Array(100)].map((_, i) => (
+            {/* Enhanced Twinkling Stars */}
+            {[...Array(150)].map((_, i) => ( // Increased count for more stars
                 <motion.div
                     key={`star-${i}`}
                     className="absolute w-1 h-1 bg-white rounded-full"
                     initial={{
                         x: Math.random() * window.innerWidth,
                         y: Math.random() * window.innerHeight,
-                        opacity: 0
+                        opacity: 0,
+                        scale: Math.random() * 0.5 + 0.5 // Vary initial size
                     }}
                     animate={{
-                        opacity: [0, 1, 0.3, 1, 0],
-                        scale: [0.5, 1, 0.5, 1, 0.5]
+                        opacity: [0, 1, 0.3, 1, 0], // More pronounced twinkling
+                        scale: [0.5, 1.2, 0.7, 1.2, 0.5], // More dynamic scaling
+                        x: `+=${(Math.random() - 0.5) * 50}`, // Subtle horizontal drift
+                        y: `+=${(Math.random() - 0.5) * 50}`  // Subtle vertical drift
                     }}
                     transition={{
                         duration: 2 + Math.random() * 3,
                         repeat: Infinity,
                         ease: "easeInOut",
-                        delay: Math.random() * 2
+                        delay: Math.random() * 4 // Increased delay range for more staggered effect
+                    }}
+                    style={{
+                        boxShadow: '0 0 5px rgba(255, 255, 255, 0.8)', // Slight glow
+                        filter: 'blur(0.2px)'
                     }}
                 />
             ))}
+            {/* Orbs (kept as is, they add to the magical feel) */}
             {[...Array(8)].map((_, i) => (
                 <motion.div
                     key={`orb-${i}`}
@@ -294,6 +312,7 @@ const MagicalLoading = () => (
                         transition={{
                             duration: 1,
                             repeat: Infinity,
+                            ease: "easeInOut",
                             delay: i * 0.2
                         }}
                     />
@@ -305,13 +324,16 @@ const MagicalLoading = () => (
 
 // Enhanced Navigation Component
 const Navigation = ({ activeSection, setActiveSection }) => {
+    const navigate = useNavigate(); // For routing
     const navItems = [
         { id: 'home', label: 'Hogwarts', icon: '🏰' },
         { id: 'characters', label: 'Characters', icon: '⚡' },
         { id: 'spells', label: 'Spells', icon: '🪄' },
         { id: 'houses', label: 'Houses', icon: '🦁' },
         { id: 'tour', label: 'Virtual Tour', icon: '🧳' },
-        { id: 'contact', label: 'Contact Us', icon: '✉️' }
+        { id: 'contact', label: 'Contact Us', icon: '✉️' },
+        { label: 'Login', icon: '🔑', path: '/login' },
+        { label: 'Register', icon: '☺️', path: '/register' }
     ];
 
     const scrollToSection = (id) => {
@@ -333,8 +355,14 @@ const Navigation = ({ activeSection, setActiveSection }) => {
                 <div className="flex space-x-6">
                     {navItems.map((item) => (
                         <motion.button
-                            key={item.id}
-                            onClick={() => scrollToSection(item.id)}
+                            key={item.label}
+                            onClick={() => {
+                                if (item.path) {
+                                    navigate(item.path); // route to /login or /register
+                                } else {
+                                    scrollToSection(item.id);
+                                }
+                            }}
                             className={`flex items-center space-x-3 px-6 py-3 rounded-xl transition-all duration-300 ${
                                 activeSection === item.id
                                     ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black shadow-lg'
@@ -559,17 +587,41 @@ const FloatingElements = () => {
     );
 };
 
+const CharacterCarousel = ({ onCharacterSelect }) => { // Removed characterScales, characterPositions, characterRotations from props
+    const [characterScales, setCharacterScales] = useState({
+        harry: [0.030, 0.030, 0.030],
+        hermione: [0.030, 0.030, 0.030],
+        ron: [0.030, 0.030, 0.030],
+        snape: [0.041, 0.041, 0.041],
+        mcgonagall: [0.026, 0.026, 0.026],
+        hagrid: [0.015, 0.015, 0.015],
+        dumbledore: [0.022, 0.022, 0.022],
+        draco: [0.030, 0.030, 0.030],
+    });
 
-// REMOVED ScaleControls component
+    // You can define default positions and rotations here or pass them as props if they are dynamic
+    const characterPositions = {
+        harry: 0,
+        hermione: 0,
+        ron: 0,
+        snape: 0,
+        mcgonagall: 0,
+        hagrid: 0,
+        dumbledore: 0,
+        draco: 0,
+    };
 
+    const characterRotations = {
+        harry: Math.PI,
+        hermione: Math.PI,
+        ron: Math.PI,
+        snape: Math.PI,
+        mcgonagall: Math.PI,
+        hagrid: Math.PI,
+        dumbledore: Math.PI,
+        draco: Math.PI,
+    };
 
-// REMOVED PositionControls component
-
-
-// REMOVED RotationControls component
-
-
-const CharacterCarousel = ({ onCharacterSelect, characterScales, characterPositions, characterRotations }) => {
     const characters = [
         { id: 'harry', name: 'Harry Potter', model: AnimatedHarryPotterModel },
         { id: 'hermione', name: 'Hermione Granger', model: AnimatedHermioneGrangerModel },
@@ -679,291 +731,230 @@ const CharacterCarousel = ({ onCharacterSelect, characterScales, characterPositi
     );
 };
 
-// NEW: Contact Us Section Component
-const ContactUsSection = () => (
-    <section id="contact" className="py-20 px-4 text-center bg-black/70 backdrop-blur-md text-white z-40 relative">
-        <h2 className="text-5xl font-bold text-yellow-400 mb-8">Contact Us</h2>
+// NEW: Spells Section Component
+const SpellsSection = () => (
+    <section id="spells" className="py-20 px-4 text-center bg-black/70 backdrop-blur-md text-white z-40 relative">
+        <h2 className="text-5xl font-bold text-yellow-400 mb-8">Master the Spells</h2>
         <p className="text-xl mb-6 max-w-2xl mx-auto">
-            Have questions about the Wizarding World, or want to report a magical anomaly?
-            Reach out to us!
+            From "Wingardium Leviosa" to "Expelliarmus," delve into the magical incantations that shape the wizarding world.
+            Learn about their origins, effects, and how to master them!
         </p>
-        <div className="flex flex-col items-center space-y-4">
-            <a href="mailto:info@hogwartsodyssey.com" className="text-yellow-300 hover:text-yellow-100 text-lg flex items-center space-x-2">
-                <span className="text-2xl">📧</span> <span>info@hogwartsodyssey.com</span>
-            </a>
-            <p className="text-lg flex items-center space-x-2">
-                <span className="text-2xl">📞</span> <span>+1 (123) 456-7890</span>
-            </p>
-            <p className="text-lg">
-                Ministry of Magic, Whitehall, London SW1A 0AA
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="bg-purple-900/50 p-6 rounded-xl border border-purple-700 shadow-lg">
+                <h3 className="text-3xl font-semibold text-yellow-300 mb-4">Charms</h3>
+                <p className="text-gray-300">Spells that add properties to an object or person.</p>
+            </div>
+            <div className="bg-blue-900/50 p-6 rounded-xl border border-blue-700 shadow-lg">
+                <h3 className="text-3xl font-semibold text-yellow-300 mb-4">Transfiguration</h3>
+                <p className="text-gray-300">Spells that change the form or appearance of an object.</p>
+            </div>
+            <div className="bg-red-900/50 p-6 rounded-xl border border-red-700 shadow-lg">
+                <h3 className="text-3xl font-semibold text-yellow-300 mb-4">Hexes & Curses</h3>
+                <p className="text-gray-300">Darker spells intended to cause harm or misfortune.</p>
+            </div>
         </div>
+        <motion.button
+            className="mt-12 px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+        >
+            Explore All Spells
+        </motion.button>
     </section>
 );
 
-// NEW: Virtual Tour Section Component
-const VirtualTourSection = () => (
-    <section id="tour" className="py-20 px-4 text-center bg-black/70 backdrop-blur-md text-white z-40 relative">
-        <h2 className="text-5xl font-bold text-yellow-400 mb-8">Take a Virtual Tour of Hogwarts</h2>
-        <p className="text-xl mb-6 max-w-2xl mx-auto">
-            Step into the hallowed halls of Hogwarts School of Witchcraft and Wizardry from anywhere in the world!
-            Explore iconic locations like the Great Hall, the Forbidden Forest, and the Room of Requirement.
-        </p>
-        <button className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300">
-            Start Your Tour Now!
-        </button>
-    </section>
-);
-
-// NEW: Footer Component
-const Footer = () => (
-    <footer className="py-8 px-4 text-center bg-black/80 backdrop-blur-md text-gray-400 z-40 relative">
-        <p className="mb-4">© {new Date().getFullYear()} Hogwarts Odyssey. All rights reserved. | Disclaimer: This is a fan-made project.</p>
-        <div className="flex justify-center space-x-6 text-2xl">
-            <a href="#" className="hover:text-yellow-400 transition-colors">🧙‍♂️</a>
-            <a href="#" className="hover:text-yellow-400 transition-colors">🦉</a>
-            <a href="#" className="hover:text-yellow-400 transition-colors">✨</a>
-        </div>
-    </footer>
-);
-
-
-// Main HomePage Component
-export default function HomePage() {
-    const [activeSection, setActiveSection] = useState('home');
+// Main App Component
+const HogwartsExperience = () => {
     const [selectedCharacter, setSelectedCharacter] = useState(null);
-    const [showCharacterPanel, setShowCharacterPanel] = useState(false);
-    const titleRef = useRef();
-    const subtitleRef = useRef();
+    const [activeSection, setActiveSection] = useState('home');
 
-    // --- State to manage individual character scales ---
-    const [characterScales, setCharacterScales] = useState({
-        harry: [0.030, 0.030, 0.030],
-        hermione: [0.030, 0.030, 0.030],
-        ron: [0.030, 0.030, 0.030],
-        snape: [0.041, 0.041, 0.041],
-        mcgonagall: [0.026, 0.026, 0.026],
-        hagrid: [0.015, 0.015, 0.015],
-        dumbledore: [0.022, 0.022, 0.022],
-        draco: [0.030, 0.030, 0.030],
-    });
+    // Callback to set the active section based on scroll
+    const handleScroll = useCallback(() => {
+        const sections = ['home', 'characters', 'spells', 'houses', 'tour', 'contact'];
+        const scrollPosition = window.scrollY + window.innerHeight / 2; // Check midpoint of the viewport
 
-    // --- NEW STATE: to manage individual character Z-positions ---
-    const [characterPositions, setCharacterPositions] = useState({
-        harry: 0, // N/A given, defaulting to 0
-        hermione: 0.9,
-        ron: 0.3,
-        snape: -1.0,
-        mcgonagall: -0.6,
-        hagrid: -1.2,
-        dumbledore: -0.2,
-        draco: 0, // N/A given, defaulting to 0
-    });
-
-    // --- NEW STATE: to manage individual character Y-rotations (converted to radians) ---
-    const [characterRotations, setCharacterRotations] = useState({
-        harry: degToRad(-180),
-        hermione: degToRad(-166),
-        ron: degToRad(-180),
-        snape: degToRad(2),
-        mcgonagall: degToRad(180),
-        hagrid: degToRad(180),
-        dumbledore: degToRad(180),
-        draco: degToRad(180),
-    });
-
-
-    useEffect(() => {
-        if (titleRef.current) {
-            gsap.fromTo(titleRef.current,
-                { opacity: 0, y: 100, scale: 0.5, rotationX: -90 },
-                { opacity: 1, y: 0, scale: 1, rotationX: 0, duration: 2, ease: "power3.out", delay: 0.5 }
-            );
-        }
-
-        if (subtitleRef.current) {
-            gsap.fromTo(subtitleRef.current,
-                { opacity: 0, y: 50, letterSpacing: '10px' },
-                { opacity: 1, y: 0, letterSpacing: '2px', duration: 1.5, ease: "power2.out", delay: 1.5 }
-            );
+        for (const sectionId of sections) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                if (scrollPosition >= element.offsetTop && scrollPosition < element.offsetTop + element.offsetHeight) {
+                    setActiveSection(sectionId);
+                    break;
+                }
+            }
         }
     }, []);
 
-    const handleCharacterClick = (character) => {
-        setSelectedCharacter(character);
-        setShowCharacterPanel(true);
-    };
-
-    // This list is only used by the REMOVED control components, so it's not strictly needed anymore
-    // but I'll keep it as a comment for reference.
-    /*
-    const charactersListForControls = [
-        { id: 'harry', name: 'Harry Potter' },
-        { id: 'hermione', name: 'Hermione Granger' },
-        { id: 'ron', name: 'Ron Weasley' },
-        { id: 'snape', name: 'Severus Snape' },
-        { id: 'mcgonagall', name: 'Professor McGonagall' },
-        { id: 'hagrid', name: 'Rubeus Hagrid' },
-        { id: 'dumbledore', name: 'Albus Dumbledore' },
-        { id: 'draco', name: 'Draco Malfoy' },
-    ];
-    */
-
+    useEffect(() => {
+        window.addEventListener('scroll', handleScroll);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, [handleScroll]);
 
     return (
-        <div className="relative min-h-screen overflow-auto scroll-smooth">
-            {/* Video Background */}
+        <div className="relative min-h-screen bg-black text-white font-harry-potter overflow-hidden">
             <VideoBackground />
-
-            {/* Navigation */}
+            <FloatingElements />
             <Navigation activeSection={activeSection} setActiveSection={setActiveSection} />
 
-            {/* REMOVED: Scale Controls */}
-            {/* REMOVED: Position Controls */}
-            {/* REMOVED: Rotation Controls */}
-
-            {/* Main Hero Section with ONLY Title */}
-            <div id="home" className="relative h-screen flex flex-col items-center justify-center">
-                <motion.div
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 text-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 1 }}
+            <main className="relative z-10">
+                {/* Home Section */}
+                <section
+                    id="home"
+                    className="relative h-screen flex flex-col items-center justify-center text-center px-4"
                 >
-                    <div className="relative">
-                        <h1
-                            ref={titleRef}
-                            className="text-7xl md:text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 mb-6 drop-shadow-2xl"
-                            style={{
-                                fontFamily: 'serif',
-                                textShadow: '0 0 30px rgba(255, 212, 0, 0.5)'
-                            }}
-                        >
-                            HARRY POTTER
-                        </h1>
+                    <motion.h1
+                        className="text-7xl md:text-8xl font-bold text-yellow-400 mt-8 mb-6 drop-shadow-lg"
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1, duration: 1 }}
+                    >
+                        Welcome to Hogwarts
+                    </motion.h1>
+                    <motion.p
+                        className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto"
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1.2, duration: 1 }}
+                    >
+                        Embark on a magical journey through the wizarding world. Discover characters, spells, and the secrets of Hogwarts.
+                    </motion.p>
+                    <motion.button
+                        className="mt-10 px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 text-lg"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 1.4, duration: 0.8 }}
+                        onClick={() => {
+                            const charactersSection = document.getElementById('characters');
+                            if (charactersSection) {
+                                charactersSection.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        }}
+                    >
+                        Begin Your Adventure
+                    </motion.button>
+                </section>
+
+                {/* Characters Section */}
+                <section
+                    id="characters"
+                    className="py-20 px-4 text-center bg-black/80 backdrop-blur-md z-40 relative"
+                >
+                    <h2 className="text-5xl font-bold text-yellow-400 mb-12">Meet the Characters</h2>
+                    <CharacterCarousel onCharacterSelect={setSelectedCharacter} /> {/* Pass characterScales here */}
+                </section>
+
+                {/* Spells Section */}
+                <SpellsSection />
+
+                {/* Houses Section */}
+                <section id="houses" className="py-20 px-4 text-center bg-black/70 backdrop-blur-md text-white z-40 relative">
+                    <h2 className="text-5xl font-bold text-yellow-400 mb-8">Hogwarts Houses</h2>
+                    <p className="text-xl mb-12 max-w-2xl mx-auto">
+                        Discover the noble houses of Hogwarts: Gryffindor, Hufflepuff, Ravenclaw, and Slytherin.
+                        Which house will you belong to?
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+                        {/* Gryffindor */}
                         <motion.div
-                            className="absolute inset-0 text-7xl md:text-9xl font-bold text-yellow-400/20"
-                            animate={{
-                                scale: [1, 1.02, 1],
-                                opacity: [0.2, 0.4, 0.2]
-                            }}
-                            transition={{
-                                duration: 3,
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                            }}
-                            style={{ fontFamily: 'serif' }}
+                            className="bg-red-900/50 p-6 rounded-xl border-2 border-red-700 shadow-xl flex flex-col items-center transform hover:scale-105 transition-transform duration-300"
+                            whileHover={{ y: -5 }}
                         >
-                            HARRY POTTER
+                            <img src="/images/gryffindor.png" alt="Gryffindor" className="h-24 w-24 mb-4" />
+                            <h3 className="text-3xl font-semibold text-yellow-300 mb-2">Gryffindor</h3>
+                            <p className="text-gray-300">Courage, Bravery, Determination, Chivalry.</p>
+                        </motion.div>
+                        {/* Hufflepuff */}
+                        <motion.div
+                            className="bg-yellow-900/50 p-6 rounded-xl border-2 border-yellow-700 shadow-xl flex flex-col items-center transform hover:scale-105 transition-transform duration-300"
+                            whileHover={{ y: -5 }}
+                        >
+                            <img src="/images/hufflepuff.png" alt="Hufflepuff" className="h-24 w-24 mb-4" />
+                            <h3 className="text-3xl font-semibold text-yellow-300 mb-2">Hufflepuff</h3>
+                            <p className="text-gray-300">Dedication, Hard Work, Fair Play, Patience, Loyalty.</p>
+                        </motion.div>
+                        {/* Ravenclaw */}
+                        <motion.div
+                            className="bg-blue-900/50 p-6 rounded-xl border-2 border-blue-700 shadow-xl flex flex-col items-center transform hover:scale-105 transition-transform duration-300"
+                            whileHover={{ y: -5 }}
+                        >
+                            <img src="/images/ravenclaw.png" alt="Ravenclaw" className="h-24 w-24 mb-4" />
+                            <h3 className="text-3xl font-semibold text-yellow-300 mb-2">Ravenclaw</h3>
+                            <p className="text-gray-300">Intelligence, Creativity, Learning, Wit, Wisdom.</p>
+                        </motion.div>
+                        {/* Slytherin */}
+                        <motion.div
+                            className="bg-green-900/50 p-6 rounded-xl border-2 border-green-700 shadow-xl flex flex-col items-center transform hover:scale-105 transition-transform duration-300"
+                            whileHover={{ y: -5 }}
+                        >
+                            <img src="/images/slytherin.png" alt="Slytherin" className="h-24 w-24 mb-4" />
+                            <h3 className="text-3xl font-semibold text-yellow-300 mb-2">Slytherin</h3>
+                            <p className="text-gray-300">Ambition, Cunning, Leadership, Resourcefulness.</p>
                         </motion.div>
                     </div>
+                </section>
 
-                    <motion.p
-                        ref={subtitleRef}
-                        className="text-2xl md:text-3xl text-yellow-300 font-light tracking-wider mb-8"
-                        animate={{
-                            opacity: [0.8, 1, 0.8]
-                        }}
-                        transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                        }}
-                    >
-                        ✨ Enter the Wizarding World ✨
-                    </motion.p>
-                </motion.div>
+                {/* Virtual Tour Section */}
+                <section id="tour" className="py-20 px-4 text-center bg-black/80 backdrop-blur-md text-white z-40 relative">
+                    <h2 className="text-5xl font-bold text-yellow-400 mb-8">Virtual Tour of Hogwarts</h2>
+                    <p className="text-xl mb-6 max-w-2xl mx-auto">
+                        Explore the hallowed halls, secret passages, and iconic locations of Hogwarts Castle in a breathtaking virtual tour.
+                    </p>
+                    <Link to="/virtual-tour"> {/* Replace "/virtual-tour" with your actual route */}
+        <motion.button
+            className="mt-8 px-8 py-4 bg-gradient-to-r from-green-400 to-teal-500 text-black font-bold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+        >
+            Start Tour
+        </motion.button>
+    </Link>
+                </section>
 
-                {/* 3D Scene with ONLY the Logo */}
-                <div className="absolute inset-0 z-30">
-                    <Canvas
-                        camera={{ position: [0, 0.5, 10], fov: 60 }}
-                        style={{ background: 'transparent' }}
-                        shadows
-                    >
-                        <Suspense fallback={<MagicalLoading />}>
-                            {/* Lighting */}
-                            <ambientLight intensity={0.6} />
-                            <directionalLight
-                                position={[10, 10, 5]}
-                                intensity={2}
-                                color="#FFD700"
-                                castShadow
-                                shadow-mapSize-width={1024}
-                                shadow-mapSize-height={1024}
-                                shadow-camera-far={100}
-                                shadow-camera-left={-20}
-                                shadow-camera-right={20}
-                                shadow-camera-top={20}
-                                shadow-camera-bottom={-20}
-                            />
-                            <pointLight position={[-10, -10, -10]} intensity={1} color="#FF4500" />
-                            <pointLight position={[10, 5, 5]} intensity={0.8} color="#9400D3" />
+                {/* Contact Us Section */}
+                <section id="contact" className="py-20 px-4 text-center bg-black/70 backdrop-blur-md text-white z-40 relative">
+                    <h2 className="text-5xl font-bold text-yellow-400 mb-8">Contact Us</h2>
+                    <p className="text-xl mb-8 max-w-2xl mx-auto">
+                        Have questions about the wizarding world or Hogwarts? Send us an owl!
+                    </p>
+                    <form className="max-w-md mx-auto space-y-6">
+                        <motion.input
+                            type="text"
+                            placeholder="Your Name"
+                            className="w-full p-4 rounded-lg bg-gray-800 text-white border border-yellow-400 focus:border-yellow-300 focus:ring focus:ring-yellow-300 focus:ring-opacity-50 transition-all"
+                            whileFocus={{ scale: 1.02 }}
+                        />
+                        <motion.input
+                            type="email"
+                            placeholder="Your Email"
+                            className="w-full p-4 rounded-lg bg-gray-800 text-white border border-yellow-400 focus:border-yellow-300 focus:ring focus:ring-yellow-300 focus:ring-opacity-50 transition-all"
+                            whileFocus={{ scale: 1.02 }}
+                        />
+                        <motion.textarea
+                            placeholder="Your Message"
+                            rows="6"
+                            className="w-full p-4 rounded-lg bg-gray-800 text-white border border-yellow-400 focus:border-yellow-300 focus:ring focus:ring-yellow-300 focus:ring-opacity-50 transition-all"
+                            whileFocus={{ scale: 1.02 }}
+                        ></motion.textarea>
+                        <motion.button
+                            type="submit"
+                            className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            Send Message
+                        </motion.button>
+                    </form>
+                </section>
+            </main>
 
-                            {/* Logo - Using your imported model */}
-                            <AnimatedHarryPotterLogoModel position={[0, 1.5, -3]} rotation={[0, 0, 0]} scale={[0.0001, 0.0001, 0.0001]} />
+            <CharacterPanel character={selectedCharacter} isVisible={!!selectedCharacter} onClose={() => setSelectedCharacter(null)} />
 
-                            {/* Environment */}
-                            <Environment preset="night" />
-
-                            {/* Controls - Adjusted for logo only */}
-                            <OrbitControls
-                                enablePan={false}
-                                enableZoom={false} // Disable zoom to keep logo fixed
-                                enableRotate={true}
-                                maxPolarAngle={Math.PI / 2}
-                                minDistance={2}
-                                maxDistance={15}
-                                target={[0, 0, 0]}
-                            />
-                        </Suspense>
-                    </Canvas>
-                </div>
-            </div>
-
-            {/* Character Showcase Section */}
-            <section id="characters" className="py-20 px-4 text-center bg-black/70 backdrop-blur-md text-white z-40 overflow-hidden min-h-[100vh] flex flex-col justify-center items-center">
-                <h2 className="text-5xl font-bold text-yellow-400 mb-8">Meet the Iconic Characters</h2>
-                <p className="text-xl mb-12 max-w-3xl mx-auto leading-relaxed">
-                    Journey through the Wizarding World and discover the heroes, friends, and formidable adversaries
-                    who shape the magical saga. Click "View Details" to learn more about each character!
-                </p>
-
-                {/* Character Carousel - now a direct child of the section */}
-                <CharacterCarousel
-                    onCharacterSelect={handleCharacterClick}
-                    characterScales={characterScales}
-                    characterPositions={characterPositions}
-                    characterRotations={characterRotations}
-                />
-            </section>
-
-            {/* Character Info Panel */}
-            <CharacterPanel character={selectedCharacter} isVisible={showCharacterPanel} onClose={() => setShowCharacterPanel(false)} />
-
-            {/* Other Sections */}
-            <section id="spells" className="py-20 px-4 text-center bg-black/80 backdrop-blur-md text-white z-40 relative">
-                <h2 className="text-5xl font-bold text-yellow-400 mb-8">Master the Spells</h2>
-                <p className="text-xl mb-6 max-w-2xl mx-auto">
-                    Learn about the various spells used throughout the series, from simple charms to powerful curses.
-                </p>
-                {/* Add spell content here */}
-            </section>
-
-            <section id="houses" className="py-20 px-4 text-center bg-black/70 backdrop-blur-md text-white z-40 relative">
-                <h2 className="text-5xl font-bold text-yellow-400 mb-8">Discover Your House</h2>
-                <p className="text-xl mb-6 max-w-2xl mx-auto">
-                    Are you a brave Gryffindor, a loyal Hufflepuff, a wise Ravenclaw, or a cunning Slytherin?
-                </p>
-                {/* Add house content here */}
-            </section>
-
-            <VirtualTourSection />
-            <ContactUsSection />
-            <Footer />
-
-            {/* Floating Elements */}
-            <FloatingElements />
+            <footer className="py-8 text-center text-gray-400 text-sm bg-black/90 z-40 relative">
+                <p>&copy; {new Date().getFullYear()} Hogwarts Experience. All rights reserved. Not affiliated with Warner Bros. Entertainment.</p>
+            </footer>
         </div>
     );
-}
+};
+
+export default HogwartsExperience;
