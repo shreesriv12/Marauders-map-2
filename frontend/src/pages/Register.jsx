@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { create } from 'zustand';
 import { Camera, Upload, Wand2, Home, User, Mail, Lock, LockKeyhole, Calendar, Star } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import { useNavigate } from 'react-router-dom';
+import useRegistrationStore from '../store/useStore'; // Import the auth store (renamed for clarity)
 
-// Zustand store for registration state
-const useRegistrationStore = create((set) => ({
-  formData: {
+const WizardRegistration = () => {
+  const navigate = useNavigate();
+
+  // Use the auth store
+  const { signup, isLoading, error, clearError } = useRegistrationStore(); // Corrected import name
+
+  // Local state for form data
+  const [formData, setFormData] = useState({
     fullName: '',
     username: '',
     email: '',
@@ -17,52 +22,12 @@ const useRegistrationStore = create((set) => ({
     favoriteSpell: '',
     wandCore: '',
     petCompanion: '',
-    profilePicture: null, // Stores base64 string for preview
-    profilePictureFile: null, // Stores the actual File object for upload
-    agreeToTerms: false
-  },
-  currentStep: 1,
-  isLoading: false,
-  setFormData: (data) => set((state) => ({
-    formData: { ...state.formData, ...data }
-  })),
-  setCurrentStep: (step) => set({ currentStep: step }),
-  setLoading: (loading) => set({ isLoading: loading }),
-  resetForm: () => set({
-    formData: {
-      fullName: '',
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      dateOfBirth: '',
-      house: '',
-      autoSortHouse: false,
-      favoriteSpell: '',
-      wandCore: '',
-      petCompanion: '',
-      profilePicture: null,
-      profilePictureFile: null,
-      agreeToTerms: false
-    },
-    currentStep: 1
-  })
-}));
+    profilePicture: null, // For preview (Base64)
+    profilePictureFile: null, // For actual file upload
+    agreeToTerms: false,
+  });
 
-const WizardRegistration = () => {
-  const {
-    formData,
-    currentStep,
-    isLoading,
-    setFormData,
-    setCurrentStep,
-    setLoading,
-    resetForm
-  } = useRegistrationStore();
-
-  // Initialize the useNavigate hook
-  const navigate = useNavigate();
-
+  const [currentStep, setCurrentStep] = useState(1);
   const [sortingQuizActive, setSortingQuizActive] = useState(false);
   const [currentQuizQuestion, setCurrentQuizQuestion] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState([]);
@@ -180,23 +145,25 @@ const WizardRegistration = () => {
   ];
 
   const handleInputChange = (field, value) => {
-    setFormData({ [field]: value });
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear any existing errors when user starts typing
+    if (error) clearError();
   };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // For preview
+      // For preview: Store Base64 string in formData.profilePicture
       const reader = new FileReader();
       reader.onload = (e) => {
-        setFormData({ profilePicture: e.target.result });
+        setFormData(prev => ({ ...prev, profilePicture: e.target.result }));
       };
       reader.readAsDataURL(file);
 
       // Store the actual File object for upload
-      setFormData({ profilePictureFile: file });
+      setFormData(prev => ({ ...prev, profilePictureFile: file }));
     } else {
-      setFormData({ profilePicture: null, profilePictureFile: null });
+      setFormData(prev => ({ ...prev, profilePicture: null, profilePictureFile: null }));
     }
   };
 
@@ -222,13 +189,12 @@ const WizardRegistration = () => {
         houseCount[a] > houseCount[b] ? a : b
       );
 
-      setFormData({ house: sortedHouse });
+      setFormData(prev => ({ ...prev, house: sortedHouse }));
       setSortingQuizActive(false);
       setCurrentStep(3);
     }
   };
 
-  // Function to show a custom message box (replaces alert())
   const showMessageBox = (title, message, emoji, onConfirm) => {
     const messageBox = document.createElement('div');
     messageBox.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
@@ -251,68 +217,85 @@ const WizardRegistration = () => {
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
-    const backendUrl = 'http://localhost:5000/api/auth/register'; // Your backend registration endpoint
+    // Prepare data for the signup function
+    let dataToSend;
+
+    if (formData.profilePictureFile) {
+      // If a file is selected, create FormData
+      dataToSend = new FormData();
+      dataToSend.append('fullName', formData.fullName);
+      dataToSend.append('username', formData.username);
+      dataToSend.append('email', formData.email);
+      dataToSend.append('password', formData.password);
+      dataToSend.append('house', formData.house);
+      dataToSend.append('dateOfBirth', formData.dateOfBirth);
+      dataToSend.append('favoriteSpell', formData.favoriteSpell);
+      dataToSend.append('wandCore', formData.wandCore);
+      dataToSend.append('petCompanion', formData.petCompanion);
+      dataToSend.append('profilePicture', formData.profilePictureFile); // Append the actual file
+    } else {
+      // If no file, send as JSON object
+      dataToSend = {
+        fullName: formData.fullName,
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        house: formData.house,
+        dateOfBirth: formData.dateOfBirth,
+        favoriteSpell: formData.favoriteSpell,
+        wandCore: formData.wandCore,
+        petCompanion: formData.petCompanion,
+      };
+    }
 
     try {
-      // Create FormData object to send multipart/form-data
-      const data = new FormData();
+      // Use the auth store's signup function with the prepared data
+      const response = await signup(dataToSend); // Pass FormData or plain object
 
-      // Append all text fields
-      data.append('fullName', formData.fullName);
-      data.append('username', formData.username);
-      data.append('email', formData.email);
-      data.append('password', formData.password);
-      data.append('house', formData.house);
-      // Ensure dateOfBirth is formatted correctly for backend if it's a Date type
-      if (formData.dateOfBirth) {
-        data.append('dateOfBirth', formData.dateOfBirth);
-      }
-      data.append('favoriteSpell', formData.favoriteSpell);
-      data.append('wandCore', formData.wandCore);
-      data.append('petCompanion', formData.petCompanion);
-
-      // Append the actual file if it exists
-      if (formData.profilePictureFile) {
-        data.append('profilePicture', formData.profilePictureFile);
-      }
-
-      const response = await fetch(backendUrl, {
-        method: 'POST',
-        body: data, // Send the FormData object
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Registration successful:', result);
+      if (response.success) {
+        // If successful, show success message and navigate
         showMessageBox(
           'Welcome to Hogwarts!',
           'Your magical journey begins now! 🎉',
-          '🎉',
+          '🎓',
           () => {
-            resetForm();
-            setLoading(false);
-            // Navigate to /dashboard on successful registration and message box close
+            // Reset form
+            setFormData({
+              fullName: '',
+              username: '',
+              email: '',
+              password: '',
+              confirmPassword: '',
+              dateOfBirth: '',
+              house: '',
+              autoSortHouse: false,
+              favoriteSpell: '',
+              wandCore: '',
+              petCompanion: '',
+              profilePicture: null,
+              profilePictureFile: null,
+              agreeToTerms: false,
+            });
+            setCurrentStep(1);
             navigate('/dashboard');
           }
         );
       } else {
-        const errorData = await response.json();
-        console.error('Registration failed:', response.status, errorData);
+        // Error handling is already done in the auth store,
+        // but we can use the message from the response for the message box
         showMessageBox(
           'Registration Failed!',
-          `Error: ${errorData.message || 'Something went wrong on the server.'}`,
-          '❌',
-          () => setLoading(false)
+          response.message || 'Something went wrong. Please try again.',
+          '❌'
         );
       }
-    } catch (error) {
-      console.error('Network error during registration:', error);
+    } catch (err) {
+      // This catch block will primarily handle network errors not caught by fetch response.ok
+      console.error("Registration form submission error:", err);
       showMessageBox(
-        'Network Error!',
-        'Could not connect to the server. Please check your internet connection or try again later.',
-        '📡',
-        () => setLoading(false)
+        'Registration Failed!',
+        error || 'An unexpected error occurred during registration.', // Use error from store or generic
+        '❌'
       );
     }
   };
@@ -320,12 +303,11 @@ const WizardRegistration = () => {
   const validateStep = (step) => {
     switch (step) {
       case 1:
-        // Basic email regex for client-side validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return (
           formData.fullName &&
           formData.username &&
-          formData.email && emailRegex.test(formData.email) && // <--- Added email regex validation
+          formData.email && emailRegex.test(formData.email) &&
           formData.password &&
           formData.confirmPassword &&
           (formData.password === formData.confirmPassword)
@@ -339,7 +321,6 @@ const WizardRegistration = () => {
     }
   };
 
-  // If sorting quiz is active, render the quiz interface
   if (sortingQuizActive) {
     const currentQ = sortingQuestions[currentQuizQuestion];
     return (
@@ -373,7 +354,6 @@ const WizardRegistration = () => {
     );
   }
 
-  // Main registration form rendering
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4 font-inter">
       <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-3xl shadow-2xl max-w-4xl w-full border-4 border-amber-400 overflow-hidden">
@@ -399,6 +379,20 @@ const WizardRegistration = () => {
             ))}
           </div>
         </div>
+
+        {/* Display error from auth store if present */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mx-8 mt-4">
+            <strong className="font-bold">Error:</strong>
+            <span className="block sm:inline"> {error}</span>
+            <button
+              onClick={clearError}
+              className="float-right text-red-700 hover:text-red-900"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <div className="p-8">
           {/* Step 1: Personal Information */}
@@ -685,6 +679,7 @@ const WizardRegistration = () => {
                     className="w-5 h-5 text-amber-500 rounded focus:ring-amber-400"
                     required
                   />
+
                   <label htmlFor="terms" className="text-lg font-bold text-gray-800">
                     ✅ I solemnly swear I am up to no good
                   </label>
