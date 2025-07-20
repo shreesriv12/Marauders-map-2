@@ -1,0 +1,10 @@
+opencv-python
+mediapipe
+flask
+flask-cors
+numpy
+langchain
+google-generativeai
+dotenv
+pillow
+rembg==2.0.46

@@ -14,6 +14,8 @@ import HandTrackingPage from './pages/HandTracking';
 import DailyProphetPage from './pages/DailyProphetPage';
 import AskLibrarianChat from './pages/AskLibrarianChat'; // NEW: Import the chatbot component
 import MaraudersMap from './pages/MaraudersMap'; // NEW: Import the MaraudersMap component
+import TransfigurationBooth from './pages/TransfigurationBooth';
+
 
 // --- Corrected ProtectedRoute Component ---
 const ProtectedRoute = ({ children }) => {
@@ -87,7 +89,15 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* You can add more protected routes here similarly */}
+            {/* New:protected route for transfiguration booth */}
+            <Route
+              path="/transfiguration-booth"
+              element={
+                <ProtectedRoute>
+                  <TransfigurationBooth />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Fallback route for unmatched paths (optional) */}
             <Route path="*" element={<Navigate to="/" />} />

@@ -8,6 +8,9 @@ import { Server as SocketIOServer } from 'socket.io';
 // Import Routes
 import authRoutes from './src/routes/authRoutes.js';
 import newsRoutes from './src/routes/newsRoutes.js';
+import transfigurationRoutes from './src/routes/transfigurationRoutes.js';
+
+
 
 dotenv.config();
 
@@ -33,6 +36,8 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // --- Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api', transfigurationRoutes);
+
 
 
 // Basic test route
