@@ -25,24 +25,23 @@ import {
   CloudRain,
   CloudSnow,
   Moon,
-  HandHelping, // Import HandHelping icon for the new button
-  Newspaper // NEW: Import Newspaper icon for Daily Prophet
+  HandHelping,
+  Newspaper,
+  MessageSquareText // NEW: Import MessageSquareText icon for the chatbot button
 } from 'lucide-react';
-import useRegistrationStore from '../store/useStore'; // Import the shared Zustand store
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
+import useRegistrationStore from '../store/useStore';
+import { useNavigate } from 'react-router-dom';
 
 const WizardDashboard = () => {
-  // Use state from Zustand store
   const { registeredUser, setRegisteredUser, resetForm } = useRegistrationStore();
-  const navigate = useNavigate(); // Initialize navigate
+  const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('profile');
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [weather, setWeather] = useState(null); // State for weather data
+  const [weather, setWeather] = useState(null);
 
-  // House configurations (static UI configurations)
   const houses = {
     gryffindor: {
       name: 'Gryffindor',
@@ -94,46 +93,36 @@ const WizardDashboard = () => {
     }
   };
 
-  // Crucial: Define a sensible default user structure if registeredUser is not yet populated.
-  // This helps prevent errors when accessing properties like registeredUser.fullName
-  // before data is loaded or if registration didn't provide all fields.
   const defaultUserData = {
     fullName: 'Fellow Wizard',
     username: 'guest',
     email: 'guest@hogwarts.edu',
-    dateOfBirth: '2000-01-01', // Example date
-    house: 'gryffindor', // Default house for display purposes
-    profilePicture: null, // This is a placeholder, 'avatarUrl' will be used from backend
+    dateOfBirth: '2000-01-01',
+    house: 'gryffindor',
+    profilePicture: null,
     level: 'First Year',
     yearOfStudy: 'First Year',
     housePoints: 0,
-    dormRoom: 'Great Hall', // Placeholder
+    dormRoom: 'Great Hall',
     joinDate: new Date().toISOString(),
     favoriteSpell: 'None',
     wandCore: 'Unknown',
     petCompanion: 'None',
-    favoriteSubjects: ['Charms', 'Potions'], // Example array
-    achievements: ['First Class Passenger'], // Example array
+    favoriteSubjects: ['Charms', 'Potions'],
+    achievements: ['First Class Passenger'],
     owlsReceived: 0,
     friends: 0,
-    lastLogin: new Date().toISOString(), // Added lastLogin to default
+    lastLogin: new Date().toISOString(),
   };
 
-  // Merge registeredUser with default data for safe access
-  // The 'avatarUrl' from registeredUser will override 'profilePicture: null'
   const user = registeredUser ? { ...defaultUserData, ...registeredUser } : defaultUserData;
 
-  // Fetch user data from Zustand or attempt to load from persistence
   useEffect(() => {
-    // Log initial state of registeredUser and authToken when component mounts
     console.log("Dashboard useEffect: Initial registeredUser state:", registeredUser);
     const initialAuthTokenCheck = localStorage.getItem('authToken');
     console.log("Dashboard useEffect: Initial localStorage authToken:", initialAuthTokenCheck ? "Found" : "Not Found", initialAuthTokenCheck);
 
-
     const loadUserData = async () => {
-      // If registeredUser is already in Zustand (e.g., just registered or logged in),
-      // and it's not just the default empty object from useStore, we're good to go.
       if (registeredUser && registeredUser.fullName && registeredUser.fullName !== 'Fellow Wizard') {
         console.log("User data already in Zustand:", registeredUser);
         setIsLoading(false);
@@ -143,12 +132,10 @@ const WizardDashboard = () => {
 
       setIsLoading(true);
       try {
-        const storedToken = localStorage.getItem('authToken'); // Assuming you store a token
+        const storedToken = localStorage.getItem('authToken');
         console.log("Dashboard loadUserData: Checking for authToken:", storedToken ? "Found" : "Not Found", storedToken);
 
         if (storedToken) {
-          // --- IMPORTANT: Replace with your actual backend API call ---
-          // This is a placeholder for fetching real user data after a refresh or direct navigation.
           console.log("Dashboard loadUserData: Attempting to fetch user profile with token...");
           const response = await fetch('http://localhost:5000/api/user/profile', {
             headers: { 'Authorization': `Bearer ${storedToken}` }
@@ -158,9 +145,8 @@ const WizardDashboard = () => {
             const userData = await response.json();
             console.log("Dashboard loadUserData: Successfully fetched user profile:", userData);
 
-            // --- CRITICAL FIX: Check if setRegisteredUser is a function before calling ---
             if (typeof setRegisteredUser === 'function') {
-              setRegisteredUser(userData); // Update Zustand store with real data
+              setRegisteredUser(userData);
               setError(null);
             } else {
               console.error("Dashboard loadUserData: Zustand 'setRegisteredUser' is not a function. Store might be misconfigured.");
@@ -172,40 +158,38 @@ const WizardDashboard = () => {
             const errorData = await response.json();
             console.error('Dashboard loadUserData: Failed to fetch user profile:', response.status, errorData);
             setError(`Failed to load profile: ${errorData.message || 'Server error.'}`);
-            localStorage.removeItem('authToken'); // Clear invalid token
+            localStorage.removeItem('authToken');
             if (typeof setRegisteredUser === 'function') {
-                setRegisteredUser(null); // Clear user data in store
+              setRegisteredUser(null);
             }
             console.log("Dashboard loadUserData: Redirecting to home due to failed profile fetch.");
-            navigate('/'); // Redirect to your login/registration page
+            navigate('/');
           }
         } else {
-          // No token found or registeredUser is explicitly null, redirect to login
           setError('No user session found. Please log in.');
           if (typeof setRegisteredUser === 'function') {
-            setRegisteredUser(null); // Ensure registeredUser is null
+            setRegisteredUser(null);
           }
           console.log("Dashboard loadUserData: Redirecting to home due to no user session.");
-          navigate('/'); // Redirect to your login/registration page
+          navigate('/');
         }
       } catch (err) {
         console.error('Dashboard loadUserData: Network error during user data load:', err);
         setError('Failed to connect to the server. Please check your internet.');
-        localStorage.removeItem('authToken'); // Clear token on network error too
+        localStorage.removeItem('authToken');
         if (typeof setRegisteredUser === 'function') {
-            setRegisteredUser(null);
+          setRegisteredUser(null);
         }
         console.log("Dashboard loadUserData: Redirecting to home due to network error.");
-        navigate('/'); // Redirect to your login/registration page
+        navigate('/');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadUserData();
-  }, [registeredUser, setRegisteredUser, navigate]); // Depend on registeredUser, its setter, and navigate
+  }, [registeredUser, setRegisteredUser, navigate]);
 
-  // Update time every minute
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -214,16 +198,13 @@ const WizardDashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch mock weather data for Hogwarts
   useEffect(() => {
     const fetchWeather = async () => {
-      // In a real app, you'd fetch from a weather API
-      // For now, let's simulate
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       const mockWeather = {
         condition: 'Partly Cloudy',
         temperature: '15°C',
-        icon: 'Cloud', // Corresponds to Lucide icon name
+        icon: 'Cloud',
         description: 'Perfect weather for a Quidditch match!',
       };
       setWeather(mockWeather);
@@ -283,19 +264,22 @@ const WizardDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken'); // Clear token from storage
-    resetForm(); // Reset Zustand store
-    navigate('/'); // Redirect to login/registration page
+    localStorage.removeItem('authToken');
+    resetForm();
+    navigate('/');
   };
 
-  // Handler for navigating to hand tracking page
   const handleGoToHandTracking = () => {
     navigate('/hand-tracking');
   };
 
-  // NEW: Handler for navigating to Daily Prophet page
   const handleGoToDailyProphet = () => {
     navigate('/daily-prophet');
+  };
+
+  // NEW: Handler for navigating to Ask Librarian AI Chatbot page
+  const handleGoToLibrarianChat = () => {
+    navigate('/ask-librarian'); // This is the new route we will define
   };
 
   if (isLoading) {
@@ -318,7 +302,7 @@ const WizardDashboard = () => {
           <h2 className="text-2xl font-bold text-red-800 mb-2">Magical Error Detected</h2>
           <p className="text-red-600 mb-4">{error}</p>
           <button
-            onClick={() => navigate('/')} // Navigate back to the login/registration
+            onClick={() => navigate('/')}
             className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300"
           >
             Go to Login
@@ -328,29 +312,25 @@ const WizardDashboard = () => {
     );
   }
 
-  // If registeredUser is still null after loading (e.g., no token, failed fetch),
-  // this block ensures the "Access Denied" message is shown.
-  // This might be redundant if the `error` state and navigation handle it,
-  // but it's a safe fallback.
   if (!registeredUser || !registeredUser.fullName || registeredUser.fullName === 'Fellow Wizard') {
-      return (
-          <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center">
-              <div className="bg-gradient-to-br from-amber-100 to-yellow-50 rounded-3xl shadow-2xl p-8 border-4 border-amber-400 text-center">
-                  <div className="text-6xl mb-4">🚫</div>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
-                  <p className="text-gray-600 mb-4">Please log in to view your magical dashboard.</p>
-                  <button
-                      onClick={() => navigate('/')} // Redirect to your login/registration page
-                      className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300"
-                  >
-                      Go to Login
-                  </button>
-              </div>
-          </div>
-      );
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center">
+        <div className="bg-gradient-to-br from-amber-100 to-yellow-50 rounded-3xl shadow-2xl p-8 border-4 border-amber-400 text-center">
+          <div className="text-6xl mb-4">🚫</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-4">Please log in to view your magical dashboard.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  const currentHouse = houses[user.house.toLowerCase()] || houses.gryffindor; // Fallback to Gryffindor if house is missing or invalid
+  const currentHouse = houses[user.house.toLowerCase()] || houses.gryffindor;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4 font-inter">
@@ -361,16 +341,13 @@ const WizardDashboard = () => {
             <div className="flex items-center space-x-4 mb-4 lg:mb-0">
               <div className="relative">
                 <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden border-4 border-white/30">
-                  {/* Debugging: Log the profilePicture URL here */}
                   {console.log("Dashboard Render: user.profilePicture =", user.profilePicture)}
-                  {/* Debugging: Log the avatarUrl here as well */}
                   {console.log("Dashboard Render: user.avatarUrl =", user.avatarUrl)}
-                  {user.avatarUrl ? ( // Changed from user.profilePicture to user.avatarUrl
+                  {user.avatarUrl ? (
                     <img
-                      src={user.avatarUrl} // Changed from user.profilePicture to user.avatarUrl
+                      src={user.avatarUrl}
                       alt="Profile"
                       className="w-full h-full object-cover"
-                      // Optional: Add onerror to see if image loading fails
                       onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100/aabbcc/ffffff?text=Error'; console.error("Failed to load profile picture:", e.target.src); }}
                     />
                   ) : (
@@ -405,7 +382,7 @@ const WizardDashboard = () => {
                 <Settings className="h-5 w-5" />
               </button>
               <button
-                onClick={handleLogout} // Added logout handler
+                onClick={handleLogout}
                 className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-300"
               >
                 <LogOut className="h-5 w-5" />
@@ -422,13 +399,14 @@ const WizardDashboard = () => {
               { id: 'house', label: 'House Info', icon: Home },
               { id: 'magic', label: 'Magic Profile', icon: Wand2 },
               { id: 'achievements', label: 'Achievements', icon: Trophy },
-              { id: 'social', label: 'Social', icon: Users }
-            ].map(({ id, label, icon: Icon }) => (
+              { id: 'social', label: 'Social', icon: Users },
+              { id: 'ask-librarian', label: 'Ask Librarian AI', icon: MessageSquareText, handler: handleGoToLibrarianChat } // NEW BUTTON
+            ].map(({ id, label, icon: Icon, handler }) => (
               <button
                 key={id}
-                onClick={() => setActiveTab(id)}
+                onClick={handler || (() => setActiveTab(id))} // Use handler if provided, else set active tab
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 font-semibold ${
-                  activeTab === id
+                  activeTab === id || handler
                     ? `bg-gradient-to-r ${currentHouse.colors} text-white shadow-lg`
                     : 'bg-white hover:bg-gray-50 text-gray-700'
                 }`}
@@ -571,7 +549,7 @@ const WizardDashboard = () => {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">House Rank</p>
-                        <p className={`font-semibold ${currentHouse.textColor}`}>#2 of 4 Houses</p> {/* Mock data */}
+                        <p className={`font-semibold ${currentHouse.textColor}`}>#2 of 4 Houses</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">Personal Contribution</p>
@@ -620,7 +598,6 @@ const WizardDashboard = () => {
                 <div className="mt-6">
                   <h3 className="text-xl font-bold text-gray-800 mb-4">📚 Favorite Subjects</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Ensure user.favoriteSubjects is an array before mapping */}
                     {(user.favoriteSubjects || []).map((subject, index) => (
                       <div key={index} className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border-2 border-purple-300 text-center">
                         <BookOpen className="h-6 w-6 text-purple-600 mx-auto mb-2" />
@@ -641,16 +618,14 @@ const WizardDashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Ensure user.achievements is an array before mapping */}
                   {(user.achievements || []).map((achievement, index) => (
                     <div key={index} className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-yellow-300 text-center hover:shadow-lg transition-all duration-300">
                       <div className="text-4xl mb-3">
-                        {/* More robust emoji selection */}
                         {index === 0 ? '🏅' : index === 1 ? '✨' : index === 2 ? '🌟' : '⭐'}
                       </div>
                       <h3 className="font-bold text-yellow-700 mb-2">{achievement}</h3>
                       <div className="w-full bg-yellow-200 rounded-full h-2">
-                        <div className="bg-gradient-to-r from-yellow-500 to-orange-500 h-2 rounded-full" style={{ width: '100%' }}></div> {/* Mock progress */}
+                        <div className="bg-gradient-to-r from-yellow-500 to-orange-500 h-2 rounded-full" style={{ width: '100%' }}></div>
                       </div>
                     </div>
                   ))}
@@ -658,7 +633,7 @@ const WizardDashboard = () => {
 
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-yellow-300">
-                    <h3 className="text-xl font-bold text-yellow-700 mb-4">� O.W.L.S Received</h3>
+                    <h3 className="text-xl font-bold text-yellow-700 mb-4">🦉 O.W.L.S Received</h3>
                     <div className="text-center">
                       <div className="text-4xl font-bold text-yellow-600 mb-2">{user.owlsReceived}</div>
                       <p className="text-yellow-600">Outstanding Work Letters</p>
@@ -672,7 +647,7 @@ const WizardDashboard = () => {
                       <div className="w-full bg-yellow-200 rounded-full h-4 mb-2">
                         <div className="bg-gradient-to-r from-yellow-500 to-orange-500 h-4 rounded-full" style={{ width: '85%' }}></div>
                       </div>
-                      <p className="text-yellow-600 text-sm">85% to Next Level</p> {/* Mock progress */}
+                      <p className="text-yellow-600 text-sm">85% to Next Level</p>
                     </div>
                   </div>
                 </div>
@@ -684,30 +659,31 @@ const WizardDashboard = () => {
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl border-4 border-blue-400 p-6">
                 <div className="flex items-center mb-6">
                   <Users className="h-8 w-8 text-blue-600 mr-3" />
-                  <h2 className="text-2xl font-bold text-gray-800">👥 Social & Community</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">👥 Friends & Fellow Students</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-blue-300 text-center">
-                    <h3 className="text-xl font-bold text-blue-700 mb-4">Your Friends</h3>
-                    <div className="text-5xl font-bold text-blue-600 mb-2">{user.friends}</div>
-                    <p className="text-blue-600">Magical Connections</p>
+                    <p className="text-sm text-gray-600 mb-2">Total Friends</p>
+                    <p className="text-5xl font-bold text-blue-700">{user.friends}</p>
                   </div>
                   <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-blue-300 text-center">
-                    <h3 className="text-xl font-bold text-blue-700 mb-4">OWLs Received</h3>
-                    <div className="text-5xl font-bold text-blue-600 mb-2">{user.owlsReceived}</div>
-                    <p className="text-blue-600">Messages from the Wizarding World</p>
+                    <p className="text-sm text-gray-600 mb-2">Pending Friend Requests</p>
+                    <p className="text-5xl font-bold text-blue-700">0</p> {/* Mock data */}
                   </div>
                 </div>
 
                 <div className="mt-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-4">🧙‍♂️ Community Board</h3>
-                  <p className="text-gray-600 italic">
-                    "Stay tuned for updates from your fellow wizards and witches!"
-                  </p>
-                  {/* Placeholder for a community feed or chat */}
-                  <div className="mt-4 bg-gray-100 p-4 rounded-lg border border-gray-200 h-32 flex items-center justify-center text-gray-500">
-                    <p>Community feed coming soon...</p>
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Find New Friends</h3>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      placeholder="Search by username..."
+                      className="flex-grow p-3 rounded-lg border-2 border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white p-3 rounded-lg transition-all duration-300">
+                      Search
+                    </button>
                   </div>
                 </div>
               </div>
@@ -716,62 +692,85 @@ const WizardDashboard = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Hogwarts Weather */}
-            <div className="bg-gradient-to-br from-blue-100 to-sky-100 rounded-2xl shadow-xl border-4 border-blue-400 p-6 text-center">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">☁️ Hogwarts Weather</h2>
+            {/* Weather Card */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl border-4 border-blue-400 p-6 text-center">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Hogwarts Weather</h2>
               {weather ? (
                 <>
-                  <div className="flex items-center justify-center mb-3">
-                    {getWeatherIcon(weather.icon)}
-                    <span className="text-5xl font-bold text-gray-800 ml-4">{weather.temperature}</span>
+                  <div className="flex items-center justify-center space-x-3 mb-4">
+                    {getWeatherIcon(weather.condition)}
+                    <span className="text-4xl font-bold text-gray-800">{weather.temperature}</span>
                   </div>
-                  <p className="text-lg text-gray-700 mb-2">{weather.condition}</p>
-                  <p className="text-gray-600 text-sm italic">{weather.description}</p>
+                  <p className="text-gray-600 text-lg mb-2">{weather.condition}</p>
+                  <p className="text-gray-500 text-sm">{weather.description}</p>
                 </>
               ) : (
                 <p className="text-gray-500">Fetching weather...</p>
               )}
             </div>
 
-            {/* Quick Links / Magical Tools */}
-            <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl shadow-xl border-4 border-purple-400 p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">🔗 Magical Tools</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+            {/* Quick Actions Card */}
+            <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl shadow-xl border-4 border-green-400 p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h2>
+              <div className="grid grid-cols-2 gap-4">
                 <button
-                  onClick={handleGoToHandTracking}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center space-x-2 transition-all duration-300 transform hover:scale-105"
+                  onClick={handleGoToDailyProphet} // Navigates to Daily Prophet
+                  className="bg-white/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center border-2 border-green-300 hover:bg-green-100 transition-all duration-300"
                 >
-                  <HandHelping className="h-5 w-5" />
-                  <span>Practice Spells</span>
+                  <Newspaper className="h-6 w-6 text-green-600 mb-2" />
+                  <span className="text-green-800 text-sm font-semibold">Daily Prophet</span>
                 </button>
-                {/* NEW: Daily Prophet Button */}
                 <button
-                  onClick={handleGoToDailyProphet} // NEW: Call the new handler
-                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center space-x-2 transition-all duration-300 transform hover:scale-105"
+                  onClick={handleGoToHandTracking} // Navigates to Hand Tracking
+                  className="bg-white/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center border-2 border-green-300 hover:bg-green-100 transition-all duration-300"
                 >
-                  <Newspaper className="h-5 w-5" /> {/* NEW: Newspaper icon */}
-                  <span>The Daily Prophet</span>
+                  <HandHelping className="h-6 w-6 text-green-600 mb-2" />
+                  <span className="text-green-800 text-sm font-semibold">Wand Training</span>
+                </button>
+                {/* NEW: Ask Librarian AI Chatbot button */}
+                <button
+                  onClick={handleGoToLibrarianChat} // NEW HANDLER
+                  className="bg-white/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center border-2 border-green-300 hover:bg-green-100 transition-all duration-300"
+                >
+                  <MessageSquareText className="h-6 w-6 text-green-600 mb-2" /> {/* NEW ICON */}
+                  <span className="text-green-800 text-sm font-semibold">Ask Librarian AI</span>
+                </button>
+                {/* Placeholder for another quick action */}
+                <button className="bg-white/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center border-2 border-green-300 hover:bg-green-100 transition-all duration-300">
+                  <Star className="h-6 w-6 text-green-600 mb-2" />
+                  <span className="text-green-800 text-sm font-semibold">Quidditch Updates</span>
                 </button>
               </div>
             </div>
 
-            {/* Upcoming Events */}
-            <div className="bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl shadow-xl border-4 border-green-400 p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">🗓️ Upcoming Events</h2>
-              <ul className="space-y-3 text-gray-700">
-                <li className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5 text-green-600" />
-                  <span>Potion Making Class - Tomorrow, 10 AM</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <Star className="h-5 w-5 text-green-600" />
-                  <span>Charms Club Meeting - Friday, 4 PM</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <Trophy className="h-5 w-5 text-green-600" />
-                  <span>Quidditch Tryouts - Next Saturday, 9 AM</span>
-                </li>
-              </ul>
+            {/* Notifications / Owl Post */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-xl border-4 border-purple-400 p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">✉️ Owl Post & Notifications</h2>
+              <div className="space-y-3">
+                <div className="flex items-center bg-white/80 backdrop-blur-sm rounded-lg p-3 border-2 border-purple-300">
+                  <Mail className="h-5 w-5 text-purple-600 mr-3" />
+                  <div>
+                    <p className="font-semibold text-gray-800">Your Transfiguration essay is due tomorrow!</p>
+                    <p className="text-sm text-gray-500">2 hours ago</p>
+                  </div>
+                </div>
+                <div className="flex items-center bg-white/80 backdrop-blur-sm rounded-lg p-3 border-2 border-purple-300">
+                  <Heart className="h-5 w-5 text-pink-600 mr-3" />
+                  <div>
+                    <p className="font-semibold text-gray-800">You've received 10 house points for excellent spellwork!</p>
+                    <p className="text-sm text-gray-500">Yesterday</p>
+                  </div>
+                </div>
+                {user.owlsReceived > 0 && (
+                  <div className="flex items-center bg-white/80 backdrop-blur-sm rounded-lg p-3 border-2 border-purple-300">
+                    <BookOpen className="h-5 w-5 text-indigo-600 mr-3" />
+                    <div>
+                      <p className="font-semibold text-gray-800">You have {user.owlsReceived} new O.W.L.s to review!</p>
+                      <p className="text-sm text-gray-500">Just now</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

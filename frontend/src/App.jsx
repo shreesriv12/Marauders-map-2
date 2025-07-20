@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-// import useRegistrationStore from './store/useStore'; // Not directly needed for ProtectedRoute token check
 
 // Import your components
 import Navbar from './components/layout/Navbar';
@@ -11,10 +10,9 @@ import GreatHallPage from './pages/GreatHallPage';
 import VirtualTourPage from './pages/VirtualTourPage';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import HandTrackingPage from './pages/HandTracking'; // Import the existing HandTrackingPage
-
-// NEW: Import the DailyProphet component
-import DailyProphetPage from './pages/DailyProphetPage'; // Assuming DailyProphet.jsx is in src/
+import HandTrackingPage from './pages/HandTracking';
+import DailyProphetPage from './pages/DailyProphetPage';
+import AskLibrarianChat from './pages/AskLibrarianChat'; // NEW: Import the chatbot component
 
 // --- Corrected ProtectedRoute Component ---
 const ProtectedRoute = ({ children }) => {
@@ -50,7 +48,7 @@ function App() {
             <Route path="/greathall" element={<GreatHallPage />} />
             <Route path="/virtual-tour" element={<VirtualTourPage />} />
             
-            {/* NEW: Route for the Daily Prophet page */}
+            {/* NEW: Route for the Daily Prophet page (public or protected based on your design) */}
             <Route path="/daily-prophet" element={<DailyProphetPage />} />
 
             {/* Protected Routes - Require authentication */}
@@ -67,6 +65,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <HandTrackingPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* NEW: Protected Route for the Ask Librarian AI Chatbot page */}
+            <Route
+              path="/ask-librarian"
+              element={
+                <ProtectedRoute>
+                  <AskLibrarianChat />
                 </ProtectedRoute>
               }
             />

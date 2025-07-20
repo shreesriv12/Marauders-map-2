@@ -7,6 +7,9 @@ from handtracking import HandTracker
 import logging
 import os 
 from dotenv import load_dotenv 
+import json
+import requests
+
 load_dotenv() 
 
 # Import the news generation blueprint and its initializer
@@ -17,10 +20,17 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)  
+CORS(app) 
 
 # Initialize hand tracker 
 hand_tracker = HandTracker()
+
+# IMPORTANT: For local development, you MUST provide your Gemini API key here
+# Get your API key from Google AI Studio: https://aistudio.google.com/app/apikey
+# It's recommended to store this in a .env file and load it using os.getenv()
+# Example: API_KEY = os.getenv("GEMINI_API_KEY")
+# For Canvas environment, leave it as an empty string.
+API_KEY = os.getenv("GEMINI_API_KEY", "") # Load from .env or default to empty
 
 def decode_base64_image(image_data_url):
     """
@@ -92,6 +102,122 @@ def track_hands():
             'hand_landmarks': []
         }), 500
 
+@app.route('/api/chatbot', methods=['POST'])
+def chatbot():
+    """
+    Handles chatbot queries.
+    Receives a user query, uses a mock search or integrates with a real search API,
+    then uses gemini-2.0-flash to generate a librarian-style response.
+    """
+    try:
+        data = request.get_json()
+        user_query = data.get('query')
+
+        if not user_query:
+            return jsonify({'response': 'Please provide a query.'}), 400
+
+        print(f"Received query from frontend: {user_query}")
+
+        # --- FIX for 'google_search' is not defined ---
+        # When running locally, 'google_search' tool is not available.
+        # You need to either:
+        # 1. Integrate a real search API (e.g., Google Custom Search API)
+        # 2. Provide a mock search result for local development.
+        
+        search_results_text = ""
+        # Option 1: Mock Search Results (for quick local testing)
+        if "harry potter" in user_query.lower():
+            search_results_text = "Harry Potter is a famous wizard, known as 'The Boy Who Lived'. He attended Hogwarts School of Witchcraft and Wizardry, sorted into Gryffindor House. His parents were James and Lily Potter."
+        elif "spells" in user_query.lower():
+            search_results_text = "Common spells include Wingardium Leviosa (levitation), Expelliarmus (disarming), and Lumos (light). Advanced spells require more practice and focus."
+        elif "hogwarts founders" in user_query.lower():
+            search_results_text = "Hogwarts was founded by Godric Gryffindor, Helga Hufflepuff, Rowena Ravenclaw, and Salazar Slytherin, each representing a house."
+        else:
+            search_results_text = "No specific information found in the immediate library archives for that query."
+
+        # Option 2: Integrate a real search API (uncomment and configure if needed)
+        # from googleapiclient.discovery import build # pip install google-api-python-client
+        # GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID") # Your Custom Search Engine ID
+        # GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") # Your Google API Key for Custom Search
+        # if GOOGLE_CSE_ID and GOOGLE_API_KEY:
+        #     try:
+        #         service = build("customsearch", "v1", developerKey=GOOGLE_API_KEY)
+        #         res = service.cse().list(q=user_query, cx=GOOGLE_CSE_ID, num=3).execute()
+        #         if res.get('items'):
+        #             search_results_text = "\n".join([item['snippet'] for item in res['items']])
+        #         else:
+        #             search_results_text = "No specific information found via external search."
+        #     except Exception as e:
+        #         print(f"Error during real Google Search API call: {e}")
+        #         search_results_text = "Could not access the wider magical knowledge network at this moment."
+        # else:
+        #     print("GOOGLE_CSE_ID or GOOGLE_API_KEY not set for real search.")
+        #     search_results_text = "External search not configured. Using mock data."
+        
+        # End of FIX for 'google_search' is not defined ---
+
+        # Step 2: Use gemini-2.0-flash to generate a librarian-style response
+        # based on the search results and the user's query.
+        
+        # Construct the prompt for the LLM
+        prompt = f"""
+        You are a helpful and knowledgeable Hogwarts Librarian AI.
+        Based on the following information from the library archives and the user's query,
+        provide a concise and helpful answer in a formal, librarian-like tone.
+        If the information is not directly available, state that politely.
+
+        User Query: "{user_query}"
+
+        Library Archives Information:
+        {search_results_text}
+
+        Librarian AI Response:
+        """
+
+        # Prepare the payload for the Gemini API call
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": prompt}]
+                }
+            ]
+        }
+        
+        # Gemini API endpoint (gemini-2.0-flash is default, no API key needed if empty string)
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
+
+        headers = {'Content-Type': 'application/json'}
+        
+        # Make the request to the Gemini API
+        gemini_response = requests.post(api_url, headers=headers, data=json.dumps(payload))
+        gemini_response.raise_for_status() # Raise an exception for HTTP errors (e.g., 403, 404, 500)
+
+        gemini_result = gemini_response.json()
+        
+        # Extract the text from the Gemini response
+        # CORRECTED: Changed .text to ['text'] for dictionary access
+        if gemini_result.get('candidates') and gemini_result['candidates'][0].get('content') and \
+           gemini_result['candidates'][0]['content'].get('parts') and \
+           gemini_result['candidates'][0]['content']['parts'][0].get('text'):
+            ai_response = gemini_result['candidates'][0]['content']['parts'][0]['text']
+        else:
+            ai_response = "I apologize, I could not generate a response at this time. The magical ink seems to have run dry."
+            print("Unexpected Gemini API response structure:", gemini_result)
+
+        return jsonify({'response': ai_response})
+
+    except requests.exceptions.RequestException as req_err:
+        print(f"Error connecting to Gemini API: {req_err}")
+        # Provide a more user-friendly message for API key issues
+        if "403 Client Error: Forbidden" in str(req_err) and not API_KEY:
+            return jsonify({'response': 'Librarian AI: My apologies, I cannot access the magical knowledge network. Please ensure your Gemini API key is correctly configured for this local server.'}), 500
+        return jsonify({'response': 'A magical disruption is preventing me from accessing the knowledge network. Please try again shortly.'}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({'response': 'An unexpected magical anomaly occurred. Please report this to the Headmaster.'}), 500
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """
@@ -113,7 +239,7 @@ def health_check():
 @app.route('/', methods=['GET'])
 def home():
     """
-    Root endpoint with API information (MODIFIED to include news generation)
+    Root endpoint with API information (MODIFIED to include news generation and chatbot)
     """
     return jsonify({
         'message': 'Welcome to The Daily Prophet AI Backend Orchestrator!',
@@ -122,9 +248,11 @@ def home():
             # Existing Hand Tracking Endpoints
             '/track_hands': 'POST - Send base64 image for hand tracking',
             '/health': 'GET - Overall server health check',
-            # NEW News Generation Endpoints
+            # News Generation Endpoints
             '/news-ai/generate-news': 'POST - Generate a news article using Gemini AI for a given category',
             '/news-ai/health': 'GET - Check the health of the news generation service',
+            # NEW Chatbot Endpoint
+            '/api/chatbot': 'POST - Ask the Librarian AI a question',
             '/': 'GET - This information page'
         },
         'usage': {
@@ -150,9 +278,19 @@ def home():
                     'news_content': 'String of the generated news article',
                     'category': 'The category that was requested'
                 }
+            },
+            'chatbot': { # NEW: Chatbot usage info
+                'method': 'POST',
+                'endpoint': '/api/chatbot',
+                'data_format': {
+                    'query': 'string (the user\'s question)'
+                },
+                'response_format': {
+                    'response': 'string (the AI librarian\'s answer)'
+                }
             }
         },
-        'note': 'Ensure your GEMINI_API_KEY is set in your environment variables for news generation.'
+        'note': 'Ensure your GEMINI_API_KEY is set in your environment variables for news generation and chatbot.'
     })
 
 # Register the news_bp blueprint with a URL prefix
