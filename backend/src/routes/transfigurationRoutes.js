@@ -1,7 +1,7 @@
-const express = require('express');
-const multer = require('multer');
-const axios = require('axios');
-const FormData = require('form-data');
+import express from 'express';
+import multer from 'multer';
+import axios from 'axios';
+import FormData from 'form-data';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -9,18 +9,17 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.post('/transfigure', upload.single('image'), async (req, res) => {
   try {
     const spell = req.body.spell;
+
     const formData = new FormData();
     formData.append('image', req.file.buffer, 'image.jpg');
     formData.append('spell', spell);
 
     const response = await axios.post(
-      'http://localhost:5001/ai/transform_image', // Flask endpoint
-      
-
+      'http://localhost:5001/ai/transform_image', // Flask AI endpoint
       formData,
       {
         headers: formData.getHeaders(),
-        responseType: 'arraybuffer',
+        responseType: 'arraybuffer', // ensures we receive raw image bytes
       }
     );
 
@@ -37,4 +36,4 @@ router.post('/transfigure', upload.single('image'), async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
