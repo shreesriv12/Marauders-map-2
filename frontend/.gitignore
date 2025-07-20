@@ -26,3 +26,5 @@ dist-ssr
 
 public/videos/
 /frontend/public/videos/harry_potter_background.mp4
+node_modules/
+.env

@@ -404,7 +404,10 @@ const WizardDashboard = () => {
               { id: 'achievements', label: 'Achievements', icon: Trophy },
               { id: 'social', label: 'Social', icon: Users },
               { id: 'marauders-map', label: 'Marauder\'s Map', icon: MapPin, handler: handleGoToMaraudersMap }, // NEW BUTTON
-              { id: 'ask-librarian', label: 'Ask Librarian AI', icon: MessageSquareText, handler: handleGoToLibrarianChat }
+              { id: 'ask-librarian', label: 'Ask Librarian AI', icon: MessageSquareText, handler: handleGoToLibrarianChat },
+              { id: 'transfiguration', label: 'Transfiguration', icon: Wand2, handler: () => navigate('/transfiguration-booth') }
+
+
             ].map(({ id, label, icon: Icon, handler }) => (
               <button
                 key={id}

@@ -10,6 +10,14 @@ from dotenv import load_dotenv
 import json
 import requests
 
+
+from flask import Flask, request, jsonify, send_file
+from PIL import Image
+from io import BytesIO
+from transform import apply_spell
+
+
+
 load_dotenv() 
 
 # Import the news generation blueprint and its initializer
@@ -292,6 +300,23 @@ def home():
         },
         'note': 'Ensure your GEMINI_API_KEY is set in your environment variables for news generation and chatbot.'
     })
+
+@app.route('/ai/transform_image', methods=['POST'])
+def transform_image():
+    if 'image' not in request.files or 'spell' not in request.form:
+        return jsonify({'error': 'Missing image or spell'}), 400
+
+    try:
+        image = Image.open(request.files['image']).convert('RGB')
+        spell = request.form['spell']
+        result = apply_spell(spell, image)
+
+        buffer = BytesIO()
+        result.save(buffer, format='JPEG')
+        buffer.seek(0)
+        return send_file(buffer, mimetype='image/jpeg')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # Register the news_bp blueprint with a URL prefix
 app.register_blueprint(news_bp, url_prefix='/news-ai')
