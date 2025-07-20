@@ -11,7 +11,10 @@ import GreatHallPage from './pages/GreatHallPage';
 import VirtualTourPage from './pages/VirtualTourPage';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import HandTrackingPage from './pages/HandTracking'; // Import the new HandTrackingPage
+import HandTrackingPage from './pages/HandTracking'; // Import the existing HandTrackingPage
+
+// NEW: Import the DailyProphet component
+import DailyProphetPage from './pages/DailyProphetPage'; // Assuming DailyProphet.jsx is in src/
 
 // --- Corrected ProtectedRoute Component ---
 const ProtectedRoute = ({ children }) => {
@@ -46,6 +49,9 @@ function App() {
             <Route path='/register' element={<Register />} />
             <Route path="/greathall" element={<GreatHallPage />} />
             <Route path="/virtual-tour" element={<VirtualTourPage />} />
+            
+            {/* NEW: Route for the Daily Prophet page */}
+            <Route path="/daily-prophet" element={<DailyProphetPage />} />
 
             {/* Protected Routes - Require authentication */}
             <Route
@@ -56,7 +62,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route // New Protected Route for HandTrackingPage
+            <Route // Existing Protected Route for HandTrackingPage
               path="/hand-tracking"
               element={
                 <ProtectedRoute>

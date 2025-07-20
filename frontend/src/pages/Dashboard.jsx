@@ -25,7 +25,8 @@ import {
   CloudRain,
   CloudSnow,
   Moon,
-  HandHelping // Import HandHelping icon for the new button
+  HandHelping, // Import HandHelping icon for the new button
+  Newspaper // NEW: Import Newspaper icon for Daily Prophet
 } from 'lucide-react';
 import useRegistrationStore from '../store/useStore'; // Import the shared Zustand store
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
@@ -290,6 +291,11 @@ const WizardDashboard = () => {
   // Handler for navigating to hand tracking page
   const handleGoToHandTracking = () => {
     navigate('/hand-tracking');
+  };
+
+  // NEW: Handler for navigating to Daily Prophet page
+  const handleGoToDailyProphet = () => {
+    navigate('/daily-prophet');
   };
 
   if (isLoading) {
@@ -652,7 +658,7 @@ const WizardDashboard = () => {
 
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-yellow-300">
-                    <h3 className="text-xl font-bold text-yellow-700 mb-4">🦉 O.W.L.S Received</h3>
+                    <h3 className="text-xl font-bold text-yellow-700 mb-4">� O.W.L.S Received</h3>
                     <div className="text-center">
                       <div className="text-4xl font-bold text-yellow-600 mb-2">{user.owlsReceived}</div>
                       <p className="text-yellow-600">Outstanding Work Letters</p>
@@ -682,33 +688,26 @@ const WizardDashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-blue-300">
-                    <h3 className="text-xl font-bold text-blue-700 mb-4 flex items-center">
-                      <Heart className="h-6 w-6 mr-2" />
-                      Friends at Hogwarts
-                    </h3>
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-blue-600 mb-2">{user.friends}</div>
-                      <p className="text-blue-600">Magical Friendships</p>
-                    </div>
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-blue-300 text-center">
+                    <h3 className="text-xl font-bold text-blue-700 mb-4">Your Friends</h3>
+                    <div className="text-5xl font-bold text-blue-600 mb-2">{user.friends}</div>
+                    <p className="text-blue-600">Magical Connections</p>
                   </div>
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-blue-300 text-center">
+                    <h3 className="text-xl font-bold text-blue-700 mb-4">OWLs Received</h3>
+                    <div className="text-5xl font-bold text-blue-600 mb-2">{user.owlsReceived}</div>
+                    <p className="text-blue-600">Messages from the Wizarding World</p>
+                  </div>
+                </div>
 
-                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-blue-300">
-                    <h3 className="text-xl font-bold text-blue-700 mb-4">📬 Recent Activity</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <Star className="h-4 w-4 text-blue-500" />
-                        <p className="text-blue-600 text-sm">Earned 10 House Points</p>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <BookOpen className="h-4 w-4 text-blue-500" />
-                        <p className="text-blue-600 text-sm">Completed Potions Assignment</p>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Users className="h-4 w-4 text-blue-500" />
-                        <p className="text-blue-600 text-sm">Joined Study Group</p>
-                      </div>
-                    </div>
+                <div className="mt-6">
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">🧙‍♂️ Community Board</h3>
+                  <p className="text-gray-600 italic">
+                    "Stay tuned for updates from your fellow wizards and witches!"
+                  </p>
+                  {/* Placeholder for a community feed or chat */}
+                  <div className="mt-4 bg-gray-100 p-4 rounded-lg border border-gray-200 h-32 flex items-center justify-center text-gray-500">
+                    <p>Community feed coming soon...</p>
                   </div>
                 </div>
               </div>
@@ -716,88 +715,63 @@ const WizardDashboard = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Stats */}
-            <div className="bg-gradient-to-br from-amber-100 to-yellow-50 rounded-2xl shadow-xl border-4 border-amber-400 p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Stats</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">House Points</span>
-                  <span className="font-bold text-amber-600">{user.housePoints}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Friends</span>
-                  <span className="font-bold text-amber-600">{user.friends}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">O.W.L.S</span>
-                  <span className="font-bold text-amber-600">{user.owlsReceived}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Achievements</span>
-                  <span className="font-bold text-amber-600">{(user.achievements || []).length}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Hand Tracking Button */}
-            <div className="bg-gradient-to-br from-purple-100 to-indigo-50 rounded-2xl shadow-xl border-4 border-purple-400 p-6 text-center">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">🖐️ Magical Interactions</h3>
-                <button
-                    onClick={handleGoToHandTracking}
-                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
-                >
-                    <HandHelping className="h-5 w-5" />
-                    <span>Start Hand Tracking</span>
-                </button>
-            </div>
-
-
-            {/* Weather at Hogwarts */}
-            <div className="bg-gradient-to-br from-sky-100 to-blue-50 rounded-2xl shadow-xl border-4 border-blue-400 p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">☁️ Weather at Hogwarts</h3>
+          <div className="lg:col-span-1 space-y-6">
+            {/* Hogwarts Weather */}
+            <div className="bg-gradient-to-br from-blue-100 to-sky-100 rounded-2xl shadow-xl border-4 border-blue-400 p-6 text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">☁️ Hogwarts Weather</h2>
               {weather ? (
-                <div className="flex flex-col items-center justify-center text-gray-800">
-                  <div className="text-6xl mb-2">
-                    {getWeatherIcon(weather.condition)}
+                <>
+                  <div className="flex items-center justify-center mb-3">
+                    {getWeatherIcon(weather.icon)}
+                    <span className="text-5xl font-bold text-gray-800 ml-4">{weather.temperature}</span>
                   </div>
-                  <p className="text-3xl font-bold mb-1">{weather.temperature}</p>
-                  <p className="text-lg mb-2">{weather.condition}</p>
-                  <p className="text-sm text-gray-600 text-center">{weather.description}</p>
-                </div>
+                  <p className="text-lg text-gray-700 mb-2">{weather.condition}</p>
+                  <p className="text-gray-600 text-sm italic">{weather.description}</p>
+                </>
               ) : (
-                <div className="flex items-center justify-center text-gray-600 h-24">
-                  <span className="animate-pulse">Fetching weather...</span>
-                </div>
+                <p className="text-gray-500">Fetching weather...</p>
               )}
             </div>
 
-            {/* Upcoming Events (Mock Data) */}
-            <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl shadow-xl border-4 border-green-400 p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">📅 Upcoming Events</h3>
-                <ul className="space-y-3">
-                    <li className="flex items-center space-x-3">
-                        <Calendar className="h-5 w-5 text-green-600" />
-                        <div>
-                            <p className="font-semibold text-gray-800">Potions Exam</p>
-                            <p className="text-sm text-gray-600">July 25, 2025 at 10:00 AM</p>
-                        </div>
-                    </li>
-                    <li className="flex items-center space-x-3">
-                        <Trophy className="h-5 w-5 text-green-600" />
-                        <div>
-                            <p className="font-semibold text-gray-800">Quidditch Tryouts</p>
-                            <p className="text-sm text-gray-600">August 1, 2025 at 2:00 PM</p>
-                        </div>
-                    </li>
-                    <li className="flex items-center space-x-3">
-                        <BookOpen className="h-5 w-5 text-green-600" />
-                        <div>
-                            <p className="font-semibold text-gray-800">Ancient Runes Lecture</p>
-                            <p className="text-sm text-gray-600">August 5, 2025 at 9:00 AM</p>
-                        </div>
-                    </li>
-                </ul>
+            {/* Quick Links / Magical Tools */}
+            <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl shadow-xl border-4 border-purple-400 p-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">🔗 Magical Tools</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                <button
+                  onClick={handleGoToHandTracking}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center space-x-2 transition-all duration-300 transform hover:scale-105"
+                >
+                  <HandHelping className="h-5 w-5" />
+                  <span>Practice Spells</span>
+                </button>
+                {/* NEW: Daily Prophet Button */}
+                <button
+                  onClick={handleGoToDailyProphet} // NEW: Call the new handler
+                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center space-x-2 transition-all duration-300 transform hover:scale-105"
+                >
+                  <Newspaper className="h-5 w-5" /> {/* NEW: Newspaper icon */}
+                  <span>The Daily Prophet</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Upcoming Events */}
+            <div className="bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl shadow-xl border-4 border-green-400 p-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">🗓️ Upcoming Events</h2>
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex items-center space-x-2">
+                  <Calendar className="h-5 w-5 text-green-600" />
+                  <span>Potion Making Class - Tomorrow, 10 AM</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <Star className="h-5 w-5 text-green-600" />
+                  <span>Charms Club Meeting - Friday, 4 PM</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <Trophy className="h-5 w-5 text-green-600" />
+                  <span>Quidditch Tryouts - Next Saturday, 9 AM</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>

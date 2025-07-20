@@ -6,12 +6,8 @@ import { gsap } from 'gsap';
 import * as THREE from 'three';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
-// --- Import your GLTF model components ---
-// Ensure these paths are correct relative to your project structure
-// NOTE: These paths are placeholders. In a real project, ensure these models are accessible.
-// For the purpose of this example, we'll assume they are correctly imported and their content
-// is handled by the parent environment.
-// If these models are not available, the 3D canvas might show errors.
+
+
 import { HarryPotterModel } from '../components/Hero/Harryavatar';
 import { HarryPotterLogoModel } from '../components/Hero/HarryPotterLogoModel';
 import { HermioneGrangerModel } from '../components/Hero/Hermoineavatar';

@@ -1,3 +1,4 @@
 __pycache__/
 marauders-env
 ai/__pycache__/
+.env

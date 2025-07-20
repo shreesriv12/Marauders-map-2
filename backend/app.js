@@ -1,49 +1,78 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import cors from 'cors'; // Import the cors middleware
-import authRoutes from './src/routes/authRoutes.js'; // Path to your auth routes
+import cors from 'cors';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 
-dotenv.config(); // Load environment variables from .env file
+// Import Routes
+import authRoutes from './src/routes/authRoutes.js';
+import newsRoutes from './src/routes/newsRoutes.js'; // This will also be modified
+
+dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new SocketIOServer(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
+// --- NO REDIS CLIENT INITIALIZATION HERE ANYMORE ---
+
 
 // --- Middleware ---
-
-// Enable CORS: Allows your frontend (e.g., on localhost:5173) to make requests to this backend.
-// For development, app.use(cors()) is fine.
-// For production, configure specific origins for better security:
-// app.use(cors({
-//   origin: 'http://localhost:5173', // Replace with your actual frontend domain
-//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   allowedHeaders: ['Content-Type', 'Authorization']
-// }));
 app.use(cors());
-
-// Body Parser: Parses incoming JSON requests.
-// When dealing with file uploads (multipart/form-data), express.json() is NOT enough.
-// Multer will handle the body parsing for file uploads.
-// However, keep this for other JSON requests if you have them.
-// Set limit to '50mb' to handle large JSON payloads, though for file uploads, Multer handles the size.
 app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true })); // For URL-encoded data
-
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // --- Routes ---
-// All routes defined in authRoutes will be prefixed with /api/auth
 app.use('/api/auth', authRoutes);
+app.use('/api/news', newsRoutes);
+
 
 // Basic test route
 app.get('/', (req, res) => {
-  res.status(200).json({ message: 'Hogwarts Backend is running!' });
+    res.status(200).json({ message: 'Hogwarts Backend is running!' });
+});
+
+// --- Socket.IO Connection Handler ---
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+
+    socket.on('joinNewsFeed', (category) => {
+        if (typeof category === 'string' && category.length > 0) {
+            socket.join(category);
+            console.log(`${socket.id} joined news feed for category: ${category}`);
+        } else {
+            console.warn(`Invalid category received from ${socket.id}: ${category}`);
+        }
+    });
+
+    socket.on('leaveNewsFeed', (category) => {
+        if (typeof category === 'string' && category.length > 0) {
+            socket.leave(category);
+            console.log(`${socket.id} left news feed for category: ${category}`);
+        }
+    });
 });
 
 
 // --- Database Connection & Server Start ---
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('MongoDB connected');
-    const PORT = process.env.PORT || 5000; // Use port from .env or default to 5000
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch((err) => console.error('MongoDB connection error:', err));
+    .then(() => {
+        console.log('MongoDB connected');
+        const PORT = process.env.PORT || 5000;
+        server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    })
+    .catch((err) => console.error('MongoDB connection error:', err));
+
+// Export `io` ONLY now, as redisClient is removed
+export { io };
+export default app;
