@@ -1,5 +1,3 @@
-// Dashboard.jsx
-
 import React, { useState, useEffect } from 'react';
 import {
   User,
@@ -17,7 +15,7 @@ import {
   Settings,
   Trophy,
   Users,
-  MapPin,
+  MapPin, // MapPin is already imported
   Clock,
   Edit3,
   Cloud,
@@ -27,7 +25,7 @@ import {
   Moon,
   HandHelping,
   Newspaper,
-  MessageSquareText // NEW: Import MessageSquareText icon for the chatbot button
+  MessageSquareText // Import MessageSquareText icon for the chatbot button
 } from 'lucide-react';
 import useRegistrationStore from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
@@ -277,9 +275,14 @@ const WizardDashboard = () => {
     navigate('/daily-prophet');
   };
 
-  // NEW: Handler for navigating to Ask Librarian AI Chatbot page
+  // Handler for navigating to Ask Librarian AI Chatbot page
   const handleGoToLibrarianChat = () => {
-    navigate('/ask-librarian'); // This is the new route we will define
+    navigate('/ask-librarian');
+  };
+
+  // NEW: Handler for navigating to Marauder's Map page
+  const handleGoToMaraudersMap = () => {
+    navigate('/maraudersmap');
   };
 
   if (isLoading) {
@@ -400,7 +403,8 @@ const WizardDashboard = () => {
               { id: 'magic', label: 'Magic Profile', icon: Wand2 },
               { id: 'achievements', label: 'Achievements', icon: Trophy },
               { id: 'social', label: 'Social', icon: Users },
-              { id: 'ask-librarian', label: 'Ask Librarian AI', icon: MessageSquareText, handler: handleGoToLibrarianChat } // NEW BUTTON
+              { id: 'marauders-map', label: 'Marauder\'s Map', icon: MapPin, handler: handleGoToMaraudersMap }, // NEW BUTTON
+              { id: 'ask-librarian', label: 'Ask Librarian AI', icon: MessageSquareText, handler: handleGoToLibrarianChat }
             ].map(({ id, label, icon: Icon, handler }) => (
               <button
                 key={id}
@@ -715,61 +719,19 @@ const WizardDashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={handleGoToDailyProphet} // Navigates to Daily Prophet
-                  className="bg-white/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center border-2 border-green-300 hover:bg-green-100 transition-all duration-300"
+                  className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border-2 border-green-300 text-center flex flex-col items-center justify-center hover:shadow-lg transition-all duration-300"
                 >
                   <Newspaper className="h-6 w-6 text-green-600 mb-2" />
-                  <span className="text-green-800 text-sm font-semibold">Daily Prophet</span>
+                  <span className="font-semibold text-green-700 text-sm">Daily Prophet</span>
                 </button>
                 <button
                   onClick={handleGoToHandTracking} // Navigates to Hand Tracking
-                  className="bg-white/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center border-2 border-green-300 hover:bg-green-100 transition-all duration-300"
+                  className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border-2 border-green-300 text-center flex flex-col items-center justify-center hover:shadow-lg transition-all duration-300"
                 >
                   <HandHelping className="h-6 w-6 text-green-600 mb-2" />
-                  <span className="text-green-800 text-sm font-semibold">Wand Training</span>
+                  <span className="font-semibold text-green-700 text-sm">Wand Practice</span>
                 </button>
-                {/* NEW: Ask Librarian AI Chatbot button */}
-                <button
-                  onClick={handleGoToLibrarianChat} // NEW HANDLER
-                  className="bg-white/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center border-2 border-green-300 hover:bg-green-100 transition-all duration-300"
-                >
-                  <MessageSquareText className="h-6 w-6 text-green-600 mb-2" /> {/* NEW ICON */}
-                  <span className="text-green-800 text-sm font-semibold">Ask Librarian AI</span>
-                </button>
-                {/* Placeholder for another quick action */}
-                <button className="bg-white/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center border-2 border-green-300 hover:bg-green-100 transition-all duration-300">
-                  <Star className="h-6 w-6 text-green-600 mb-2" />
-                  <span className="text-green-800 text-sm font-semibold">Quidditch Updates</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Notifications / Owl Post */}
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-xl border-4 border-purple-400 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">✉️ Owl Post & Notifications</h2>
-              <div className="space-y-3">
-                <div className="flex items-center bg-white/80 backdrop-blur-sm rounded-lg p-3 border-2 border-purple-300">
-                  <Mail className="h-5 w-5 text-purple-600 mr-3" />
-                  <div>
-                    <p className="font-semibold text-gray-800">Your Transfiguration essay is due tomorrow!</p>
-                    <p className="text-sm text-gray-500">2 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-center bg-white/80 backdrop-blur-sm rounded-lg p-3 border-2 border-purple-300">
-                  <Heart className="h-5 w-5 text-pink-600 mr-3" />
-                  <div>
-                    <p className="font-semibold text-gray-800">You've received 10 house points for excellent spellwork!</p>
-                    <p className="text-sm text-gray-500">Yesterday</p>
-                  </div>
-                </div>
-                {user.owlsReceived > 0 && (
-                  <div className="flex items-center bg-white/80 backdrop-blur-sm rounded-lg p-3 border-2 border-purple-300">
-                    <BookOpen className="h-5 w-5 text-indigo-600 mr-3" />
-                    <div>
-                      <p className="font-semibold text-gray-800">You have {user.owlsReceived} new O.W.L.s to review!</p>
-                      <p className="text-sm text-gray-500">Just now</p>
-                    </div>
-                  </div>
-                )}
+                {/* Additional Quick Actions can be added here */}
               </div>
             </div>
           </div>

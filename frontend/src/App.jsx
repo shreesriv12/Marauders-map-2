@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import HandTrackingPage from './pages/HandTracking';
 import DailyProphetPage from './pages/DailyProphetPage';
 import AskLibrarianChat from './pages/AskLibrarianChat'; // NEW: Import the chatbot component
+import MaraudersMap from './pages/MaraudersMap'; // NEW: Import the MaraudersMap component
 
 // --- Corrected ProtectedRoute Component ---
 const ProtectedRoute = ({ children }) => {
@@ -74,6 +75,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AskLibrarianChat />
+                </ProtectedRoute>
+              }
+            />
+            {/* NEW: Protected Route for the Marauder's Map page */}
+            <Route
+              path="/maraudersmap"
+              element={
+                <ProtectedRoute>
+                  <MaraudersMap />
                 </ProtectedRoute>
               }
             />
