@@ -15,7 +15,7 @@ import {
   Settings,
   Trophy,
   Users,
-  MapPin, // MapPin is already imported
+  MapPin,
   Clock,
   Edit3,
   Cloud,
@@ -25,7 +25,8 @@ import {
   Moon,
   HandHelping,
   Newspaper,
-  MessageSquareText // Import MessageSquareText icon for the chatbot button
+  MessageSquareText,
+  FlaskConical, // Import FlaskConical icon for the potion game button
 } from 'lucide-react';
 import useRegistrationStore from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
@@ -280,10 +281,16 @@ const WizardDashboard = () => {
     navigate('/ask-librarian');
   };
 
-  // NEW: Handler for navigating to Marauder's Map page
+  // Handler for navigating to Marauder's Map page
   const handleGoToMaraudersMap = () => {
     navigate('/maraudersmap');
   };
+
+  // NEW: Handler for navigating to Potion Brewing Game page
+  const handleGoToPotionBrewingGame = () => {
+    navigate('/potion-brewing-game'); // Ensure this matches your route path for the game
+  };
+
 
   if (isLoading) {
     return (
@@ -403,17 +410,16 @@ const WizardDashboard = () => {
               { id: 'magic', label: 'Magic Profile', icon: Wand2 },
               { id: 'achievements', label: 'Achievements', icon: Trophy },
               { id: 'social', label: 'Social', icon: Users },
-              { id: 'marauders-map', label: 'Marauder\'s Map', icon: MapPin, handler: handleGoToMaraudersMap }, // NEW BUTTON
+              { id: 'marauders-map', label: 'Marauder\'s Map', icon: MapPin, handler: handleGoToMaraudersMap },
               { id: 'ask-librarian', label: 'Ask Librarian AI', icon: MessageSquareText, handler: handleGoToLibrarianChat },
-              { id: 'transfiguration', label: 'Transfiguration', icon: Wand2, handler: () => navigate('/transfiguration-booth') }
-
-
+              { id: 'transfiguration', label: 'Transfiguration', icon: Wand2, handler: () => navigate('/transfiguration-booth') },
+              { id: 'potion-brew', label: 'Potion Brew Game', icon: FlaskConical, handler: handleGoToPotionBrewingGame } // NEW BUTTON ADDED HERE
             ].map(({ id, label, icon: Icon, handler }) => (
               <button
                 key={id}
                 onClick={handler || (() => setActiveTab(id))} // Use handler if provided, else set active tab
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 font-semibold ${
-                  activeTab === id || handler
+                  activeTab === id || (handler && window.location.pathname.includes(id)) // Added handler check for active state
                     ? `bg-gradient-to-r ${currentHouse.colors} text-white shadow-lg`
                     : 'bg-white hover:bg-gray-50 text-gray-700'
                 }`}
@@ -654,7 +660,7 @@ const WizardDashboard = () => {
                       <div className="w-full bg-yellow-200 rounded-full h-4 mb-2">
                         <div className="bg-gradient-to-r from-yellow-500 to-orange-500 h-4 rounded-full" style={{ width: '85%' }}></div>
                       </div>
-                      <p className="text-yellow-600 text-sm">85% to Next Level</p>
+                      <p className="text-yellow-600 text-sm">Next level: Master Potioneer!</p>
                     </div>
                   </div>
                 </div>
@@ -666,77 +672,122 @@ const WizardDashboard = () => {
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl border-4 border-blue-400 p-6">
                 <div className="flex items-center mb-6">
                   <Users className="h-8 w-8 text-blue-600 mr-3" />
-                  <h2 className="text-2xl font-bold text-gray-800">👥 Friends & Fellow Students</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">🤝 Your Social Circle</h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-blue-300 text-center">
-                    <p className="text-sm text-gray-600 mb-2">Total Friends</p>
-                    <p className="text-5xl font-bold text-blue-700">{user.friends}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-blue-300">
+                    <h3 className="text-xl font-bold text-blue-700 mb-4">Friends & Connections</h3>
+                    <div className="text-center">
+                      <div className="text-5xl font-bold text-blue-600 mb-2">{user.friends}</div>
+                      <p className="text-blue-600">Total friends</p>
+                      <button className="mt-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                        View Friends
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-blue-300 text-center">
-                    <p className="text-sm text-gray-600 mb-2">Pending Friend Requests</p>
-                    <p className="text-5xl font-bold text-blue-700">0</p> {/* Mock data */}
-                  </div>
-                </div>
 
-                <div className="mt-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-4">Find New Friends</h3>
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      placeholder="Search by username..."
-                      className="flex-grow p-3 rounded-lg border-2 border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white p-3 rounded-lg transition-all duration-300">
-                      Search
-                    </button>
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-blue-300">
+                    <h3 className="text-xl font-bold text-blue-700 mb-4">Message Inbox</h3>
+                    <div className="text-center">
+                      <div className="text-5xl font-bold text-blue-600 mb-2">{user.owlsReceived}</div>
+                      <p className="text-blue-600">New Owls (messages)</p>
+                      <button className="mt-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                        Read Messages
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
+
           </div>
 
-          {/* Sidebar */}
+          {/* Right Sidebar */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Weather Card */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl border-4 border-blue-400 p-6 text-center">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Hogwarts Weather</h2>
+
+            {/* Daily Prophet */}
+            <div className="bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl shadow-xl border-4 border-gray-400 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-800">🗞️ The Daily Prophet</h3>
+                <button
+                  onClick={handleGoToDailyProphet}
+                  className="bg-gradient-to-r from-stone-500 to-gray-500 hover:from-stone-600 hover:to-gray-600 text-white p-2 rounded-lg transition-all duration-300 text-sm"
+                >
+                  View All
+                </button>
+              </div>
+              <p className="text-gray-600 text-sm mb-4">
+                Latest news from the wizarding world...
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <Newspaper className="h-5 w-5 text-gray-600 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-gray-800">Ministry Issues New Decree on Underage Magic</p>
+                    <p className="text-sm text-gray-500">July 22, 2025</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <Newspaper className="h-5 w-5 text-gray-600 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-gray-800">Quidditch World Cup Qualifiers Announced!</p>
+                    <p className="text-sm text-gray-500">July 20, 2025</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-gradient-to-br from-green-50 to-lime-50 rounded-2xl shadow-xl border-4 border-green-400 p-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={handleGoToHandTracking}
+                  className="flex flex-col items-center justify-center p-4 bg-white/70 backdrop-blur-sm rounded-xl border-2 border-green-300 hover:bg-green-100 transition-all duration-300 group"
+                >
+                  <HandHelping className="h-6 w-6 text-green-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-semibold text-green-700 text-center">Practice Hand Gestures</span>
+                </button>
+                <button
+                  onClick={handleGoToLibrarianChat}
+                  className="flex flex-col items-center justify-center p-4 bg-white/70 backdrop-blur-sm rounded-xl border-2 border-green-300 hover:bg-green-100 transition-all duration-300 group"
+                >
+                  <MessageSquareText className="h-6 w-6 text-green-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-semibold text-green-700 text-center">Ask Librarian AI</span>
+                </button>
+                <button
+                  onClick={handleGoToMaraudersMap}
+                  className="flex flex-col items-center justify-center p-4 bg-white/70 backdrop-blur-sm rounded-xl border-2 border-green-300 hover:bg-green-100 transition-all duration-300 group"
+                >
+                  <MapPin className="h-6 w-6 text-green-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-semibold text-green-700 text-center">Marauder's Map</span>
+                </button>
+                 <button
+                  onClick={handleGoToPotionBrewingGame} // Use the new handler here
+                  className="flex flex-col items-center justify-center p-4 bg-white/70 backdrop-blur-sm rounded-xl border-2 border-green-300 hover:bg-green-100 transition-all duration-300 group"
+                >
+                  <FlaskConical className="h-6 w-6 text-green-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-semibold text-green-700 text-center">Potion Brewing Game</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Hogwarts Weather */}
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl shadow-xl border-4 border-blue-400 p-6 text-center">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">☁️ Hogwarts Weather</h3>
               {weather ? (
                 <>
-                  <div className="flex items-center justify-center space-x-3 mb-4">
-                    {getWeatherIcon(weather.condition)}
-                    <span className="text-4xl font-bold text-gray-800">{weather.temperature}</span>
-                  </div>
-                  <p className="text-gray-600 text-lg mb-2">{weather.condition}</p>
-                  <p className="text-gray-500 text-sm">{weather.description}</p>
+                  {getWeatherIcon(weather.icon)}
+                  <p className="text-3xl font-bold text-blue-700 mt-2">{weather.temperature}</p>
+                  <p className="text-blue-600 text-lg mb-2">{weather.condition}</p>
+                  <p className="text-sm text-gray-600">{weather.description}</p>
                 </>
               ) : (
-                <p className="text-gray-500">Fetching weather...</p>
+                <p className="text-gray-500">Loading weather...</p>
               )}
             </div>
 
-            {/* Quick Actions Card */}
-            <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl shadow-xl border-4 border-green-400 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={handleGoToDailyProphet} // Navigates to Daily Prophet
-                  className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border-2 border-green-300 text-center flex flex-col items-center justify-center hover:shadow-lg transition-all duration-300"
-                >
-                  <Newspaper className="h-6 w-6 text-green-600 mb-2" />
-                  <span className="font-semibold text-green-700 text-sm">Daily Prophet</span>
-                </button>
-                <button
-                  onClick={handleGoToHandTracking} // Navigates to Hand Tracking
-                  className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border-2 border-green-300 text-center flex flex-col items-center justify-center hover:shadow-lg transition-all duration-300"
-                >
-                  <HandHelping className="h-6 w-6 text-green-600 mb-2" />
-                  <span className="font-semibold text-green-700 text-sm">Wand Practice</span>
-                </button>
-                {/* Additional Quick Actions can be added here */}
-              </div>
-            </div>
           </div>
         </div>
       </div>

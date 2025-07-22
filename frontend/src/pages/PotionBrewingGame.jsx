@@ -2,10 +2,10 @@
 import { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { motion, AnimatePresence } from 'framer-motion';
-import PhaserGame from '../components/potion_brew/game/PhaserGame';
+import PhaserGame from '../components/potion_brew/game/PhaserGame.jsx';
 import MagicalBackground from '../components/potion_brew/3d/Background';
-import GameUI from '../components/potion_brew/game/GameUI';
-import { ParticleOverlay } from '../components/potion_brew/effects/ParticleSystem';
+import GameUI from '../components/potion_brew/game/GameUI.jsx';
+import { ParticleOverlay } from '../components/potion_brew/effects/ParticleSystem.jsx';
 
 export default function PotionBrewingGame() {
   const [gameState, setGameState] = useState({
@@ -13,7 +13,7 @@ export default function PotionBrewingGame() {
     score: 0,
     currentRecipe: null,
     brewingSequence: [],
-    gamePhase: 'menu'
+    gamePhase: 'menu',
   });
 
   const [showParticles, setShowParticles] = useState(false);
@@ -31,16 +31,16 @@ export default function PotionBrewingGame() {
       <div className="relative z-10 w-full h-full">
         <AnimatePresence mode="wait">
           {gameState.gamePhase === 'menu' && (
-            <MainMenu 
+            <MainMenu
               onStartGame={() => setGameState(prev => ({ ...prev, gamePhase: 'playing' }))}
             />
           )}
-          
+
           {gameState.gamePhase === 'playing' && (
             <div className="w-full h-full">
               <GameUI gameState={gameState} setGameState={setGameState} />
-              <PhaserGame 
-                gameState={gameState} 
+              <PhaserGame
+                gameState={gameState}
                 setGameState={setGameState}
                 onParticleEffect={() => setShowParticles(true)}
               />
@@ -68,7 +68,7 @@ function MainMenu({ onStartGame }) {
       exit={{ opacity: 0, y: -50 }}
       className="flex flex-col items-center justify-center h-full text-white"
     >
-      <motion.h1 
+      <motion.h1
         className="text-6xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500"
         animate={{ scale: [1, 1.05, 1] }}
         transition={{ duration: 2, repeat: Infinity }}
@@ -76,7 +76,7 @@ function MainMenu({ onStartGame }) {
         Potion Master
       </motion.h1>
       <motion.p className="text-xl mb-12 text-center max-w-2xl">
-        Enter the magical world of potion brewing. Master the ancient arts of alchemy 
+        Enter the magical world of potion brewing. Master the ancient arts of alchemy
         and progress from Apprentice to Master Potioneer!
       </motion.p>
       <motion.button

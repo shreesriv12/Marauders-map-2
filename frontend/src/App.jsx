@@ -12,9 +12,10 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import HandTrackingPage from './pages/HandTracking';
 import DailyProphetPage from './pages/DailyProphetPage';
-import AskLibrarianChat from './pages/AskLibrarianChat'; // NEW: Import the chatbot component
-import MaraudersMap from './pages/MaraudersMap'; // NEW: Import the MaraudersMap component
+import AskLibrarianChat from './pages/AskLibrarianChat';
+import MaraudersMap from './pages/Maraudersmap';
 import TransfigurationBooth from './pages/TransfigurationBooth';
+import PotionBrewingGame from './pages/PotionBrewingGame'; // NEW: Import the PotionBrewingGame component
 
 
 // --- Corrected ProtectedRoute Component ---
@@ -95,6 +96,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <TransfigurationBooth />
+                </ProtectedRoute>
+              }
+            />
+            {/* NEW: Protected Route for the Potion Brewing Game */}
+            <Route
+              path="/potion-brewing-game"
+              element={
+                <ProtectedRoute>
+                  <PotionBrewingGame />
                 </ProtectedRoute>
               }
             />
