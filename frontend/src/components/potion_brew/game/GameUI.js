@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { LEVEL_REQUIREMENTS } from '../components/potion_brew/data/recipes';
-import { RECIPES } from '../components/potion_brew/data/recipes';
+import { LEVEL_REQUIREMENTS } from '../data/recipes';
+import { RECIPES } from '../data/recipes';
 
 export default function GameUI({ gameState, setGameState }) {
   const currentLevel = gameState.currentLevel;
