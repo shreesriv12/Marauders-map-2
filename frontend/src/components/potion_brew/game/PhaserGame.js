@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 
-const MainGameScene = dynamic(() => import('@/components/potion_brew/scenes/MainGameScene'), {
+const MainGameScene = dynamic(() => import('../scenes/MainGameScene'), {
   ssr: false
 });
 
@@ -21,7 +21,7 @@ export default function PhaserGame({ gameState, setGameState, onParticleEffect }
   
     const initializeGame = async () => {
       const Phaser = await import('phaser');
-      const { default: MainGameSceneClass } = await import('@/components/potion_brew/scenes/MainGameScene');
+      const { default: MainGameSceneClass } = await import('../scenes/MainGameScene');
 
       const config = {
         type: Phaser.AUTO,
