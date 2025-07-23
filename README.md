@@ -88,10 +88,7 @@
 
 
 ---
-
 ##  Team Name- MARAUDERS MAP 2
-
-- **Shreeya Srivastava**  
 
 ---
 ---
