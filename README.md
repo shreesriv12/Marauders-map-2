@@ -2,6 +2,8 @@
 
 > A magical, AI-powered digital platform that fuses **3D experiences**, **real-time gameplay**, **personality-driven sorting**, and **cutting-edge AI tools** to bring Hogwarts to life like never before.
 
+🏆 **Built for: Triwizardathon 1.0 Hackathon**
+
 ---
 
 ## 🎯 Vision
@@ -75,37 +77,38 @@
 - Built using **Phaser.js**
 - Drag & drop ingredients
 - Modes: *Guided Recipe* vs *Freestyle Experiment*
-- Visual potion FX with timers and success/failure outcomes
+- Visual potion FX with success/failure feedback
 
 ---
 
-### 📖 Tom Riddle’s AI Diary
-- Diary interface mimics handwritten ink animation
-- AI-powered chat with “Tom Riddle” persona (via Gemini)
-- Unlocks secrets and storylines as interaction deepens
+### 📓 Tom Riddle’s AI Diary
+- Talk to the enchanted diary
+- Responses generated using **Gemini AI**
+- Chat-style interface with creepy transitions
 
 ---
 
-## 🧩 Tech Stack Overview
+## 👥 Team Members
 
-### 💻 Frontend
-- `React 18`, `Three.js`, `Framer Motion`, `Tailwind CSS`
-- `Leaflet.js`: Real-time map rendering
-- `Phaser.js`: Potion brewing game
-
-### 🧠 AI/ML Services
-- `Gemini API`: News generation, AI librarian, diary responses
-- `OpenCV + MediaPipe`: Wand gesture detection
-- `TensorFlow.js`: Real-time spell visualizations
-- `rembg`: Background removal in Transfiguration
-
-### ⚙️ Backend
-- `Node.js + Express.js`: Core backend API
-- `MongoDB`: User data, news feed, quiz results
-- `JWT + bcrypt`: Secure authentication
-- `Python Flask`: AI service bridge (for image tasks, diary logic)
+- **Shreeya Srivastava**  
+- **Ashish Singh**  
+- **Nikhil Yadav**  
+- **Ayush Jadaun**
 
 ---
 
-## 📁 Folder Structure (Simplified)
+## 📌 Tech Stack
 
+**Frontend**: React 18, TailwindCSS, Framer Motion, Three.js, Phaser.js  
+**Backend**: Node.js, Express.js, MongoDB  
+**AI & ML**: Gemini API, MediaPipe, OpenCV, rembg  
+**APIs**: Leaflet.js (Maps), Geolocation API  
+**Auth**: bcrypt, JWT  
+**Image Processing**: rembg, Gemini Vision
+
+---
+
+## 🪄 Final Spell
+
+This isn’t just a website — it’s an experience.  
+One platform, endless magic. Mischief Managed. 🌌
