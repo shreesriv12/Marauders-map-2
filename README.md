@@ -86,6 +86,14 @@
 - Responses generated using **Gemini AI**
 - Chat-style interface with creepy transitions
 
+
+---
+
+##  Team Name- MARAUDERS MAP 2
+
+- **Shreeya Srivastava**  
+
+---
 ---
 
 ## 👥 Team Members
