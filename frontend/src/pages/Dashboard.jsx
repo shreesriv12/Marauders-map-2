@@ -291,6 +291,11 @@ const WizardDashboard = () => {
     navigate('/potion-brewing-game'); // Ensure this matches your route path for the game
   };
 
+  // NEW: Handler for navigating to the Chats page
+  const handleGoToChats = () => {
+    navigate('/chats'); // This should match the route for your ChatPage.jsx
+  };
+
 
   if (isLoading) {
     return (
@@ -413,7 +418,8 @@ const WizardDashboard = () => {
               { id: 'marauders-map', label: 'Marauder\'s Map', icon: MapPin, handler: handleGoToMaraudersMap },
               { id: 'ask-librarian', label: 'Ask Librarian AI', icon: MessageSquareText, handler: handleGoToLibrarianChat },
               { id: 'transfiguration', label: 'Transfiguration', icon: Wand2, handler: () => navigate('/transfiguration-booth') },
-              { id: 'potion-brew', label: 'Potion Brew Game', icon: FlaskConical, handler: handleGoToPotionBrewingGame } // NEW BUTTON ADDED HERE
+              { id: 'potion-brew', label: 'Potion Brew Game', icon: FlaskConical, handler: handleGoToPotionBrewingGame },
+              { id: 'chats', label: 'Chats', icon: MessageSquareText, handler: handleGoToChats } // NEW BUTTON ADDED HERE
             ].map(({ id, label, icon: Icon, handler }) => (
               <button
                 key={id}
@@ -712,82 +718,76 @@ const WizardDashboard = () => {
                 <h3 className="text-xl font-bold text-gray-800">🗞️ The Daily Prophet</h3>
                 <button
                   onClick={handleGoToDailyProphet}
-                  className="bg-gradient-to-r from-stone-500 to-gray-500 hover:from-stone-600 hover:to-gray-600 text-white p-2 rounded-lg transition-all duration-300 text-sm"
+                  className="bg-gradient-to-r from-stone-500 to-gray-500 hover:from-stone-600 hover:to-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300"
                 >
-                  View All
+                  Read More
                 </button>
               </div>
-              <p className="text-gray-600 text-sm mb-4">
-                Latest news from the wizarding world...
+              <p className="text-gray-700 text-sm mb-4">
+                "Ministry Confirms Breakthrough in Charm Reversal! Details on page 3."
               </p>
-              <div className="space-y-3">
-                <div className="flex items-start space-x-3">
-                  <Newspaper className="h-5 w-5 text-gray-600 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-gray-800">Ministry Issues New Decree on Underage Magic</p>
-                    <p className="text-sm text-gray-500">July 22, 2025</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <Newspaper className="h-5 w-5 text-gray-600 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-gray-800">Quidditch World Cup Qualifiers Announced!</p>
-                    <p className="text-sm text-gray-500">July 20, 2025</p>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between text-gray-600 text-sm">
+                <span>Published: {formatDate(new Date().toISOString())}</span>
+                <span>Edition: Daily</span>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-gradient-to-br from-green-50 to-lime-50 rounded-2xl shadow-xl border-4 border-green-400 p-6">
+            <div className="bg-gradient-to-br from-purple-100 to-pink-50 rounded-2xl shadow-xl border-4 border-purple-400 p-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={handleGoToHandTracking}
-                  className="flex flex-col items-center justify-center p-4 bg-white/70 backdrop-blur-sm rounded-xl border-2 border-green-300 hover:bg-green-100 transition-all duration-300 group"
+                  className="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-purple-300 text-purple-700 font-semibold"
                 >
-                  <HandHelping className="h-6 w-6 text-green-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-semibold text-green-700 text-center">Practice Hand Gestures</span>
-                </button>
-                <button
-                  onClick={handleGoToLibrarianChat}
-                  className="flex flex-col items-center justify-center p-4 bg-white/70 backdrop-blur-sm rounded-xl border-2 border-green-300 hover:bg-green-100 transition-all duration-300 group"
-                >
-                  <MessageSquareText className="h-6 w-6 text-green-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-semibold text-green-700 text-center">Ask Librarian AI</span>
+                  <Wand2 className="h-6 w-6 mb-2" />
+                  <span>Practice Spells</span>
                 </button>
                 <button
                   onClick={handleGoToMaraudersMap}
-                  className="flex flex-col items-center justify-center p-4 bg-white/70 backdrop-blur-sm rounded-xl border-2 border-green-300 hover:bg-green-100 transition-all duration-300 group"
+                  className="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-purple-300 text-purple-700 font-semibold"
                 >
-                  <MapPin className="h-6 w-6 text-green-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-semibold text-green-700 text-center">Marauder's Map</span>
+                  <MapPin className="h-6 w-6 mb-2" />
+                  <span>Marauder's Map</span>
                 </button>
-                 <button
-                  onClick={handleGoToPotionBrewingGame} // Use the new handler here
-                  className="flex flex-col items-center justify-center p-4 bg-white/70 backdrop-blur-sm rounded-xl border-2 border-green-300 hover:bg-green-100 transition-all duration-300 group"
+                <button
+                  onClick={handleGoToLibrarianChat}
+                  className="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-purple-300 text-purple-700 font-semibold"
                 >
-                  <FlaskConical className="h-6 w-6 text-green-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-semibold text-green-700 text-center">Potion Brewing Game</span>
+                  <HandHelping className="h-6 w-6 mb-2" />
+                  <span>Ask Librarian AI</span>
+                </button>
+                <button
+                  onClick={handleGoToPotionBrewingGame}
+                  className="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-purple-300 text-purple-700 font-semibold"
+                >
+                  <FlaskConical className="h-6 w-6 mb-2" />
+                  <span>Potion Brewing</span>
+                </button>
+                <button
+                  onClick={handleGoToChats} // New button for Chats
+                  className="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-purple-300 text-purple-700 font-semibold"
+                >
+                  <MessageSquareText className="h-6 w-6 mb-2" />
+                  <span>Chats</span>
                 </button>
               </div>
             </div>
 
             {/* Hogwarts Weather */}
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl shadow-xl border-4 border-blue-400 p-6 text-center">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">☁️ Hogwarts Weather</h3>
-              {weather ? (
-                <>
+            {weather && (
+              <div className="bg-gradient-to-br from-blue-100 to-cyan-50 rounded-2xl shadow-xl border-4 border-blue-400 p-6 text-center">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">☁️ Hogwarts Weather</h3>
+                <div className="flex items-center justify-center space-x-4 mb-4">
                   {getWeatherIcon(weather.icon)}
-                  <p className="text-3xl font-bold text-blue-700 mt-2">{weather.temperature}</p>
-                  <p className="text-blue-600 text-lg mb-2">{weather.condition}</p>
-                  <p className="text-sm text-gray-600">{weather.description}</p>
-                </>
-              ) : (
-                <p className="text-gray-500">Loading weather...</p>
-              )}
-            </div>
-
+                  <div>
+                    <p className="text-3xl font-bold text-blue-700">{weather.temperature}</p>
+                    <p className="text-lg text-blue-600">{weather.condition}</p>
+                  </div>
+                </div>
+                <p className="text-gray-600 text-sm">{weather.description}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,12 +1,6 @@
 'use client'; // Keep this if you're mixing with Next.js or just for explicit client component in frameworks like Next.js App Router
 
 import { useEffect, useRef, useState } from 'react';
-// Remove the 'next/dynamic' import - it's not needed here
-// import dynamic from 'next/dynamic'; // DELETE THIS LINE
-
-// The MainGameScene *class* (your Phaser scene) is loaded directly
-// within the useEffect, so no need for React.lazy or next/dynamic here.
-
 export default function PhaserGame({ gameState, setGameState, onParticleEffect }) {
   const gameRef = useRef(null); // Ref for the DOM element where Phaser will render
   const phaserGameRef = useRef(null); // Ref to hold the Phaser.Game instance itself

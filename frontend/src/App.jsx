@@ -16,6 +16,7 @@ import AskLibrarianChat from './pages/AskLibrarianChat';
 import MaraudersMap from './pages/Maraudersmap';
 import TransfigurationBooth from './pages/TransfigurationBooth';
 import PotionBrewingGame from './pages/PotionBrewingGame'; // NEW: Import the PotionBrewingGame component
+import ChatPage from './pages/ChatPage';
 
 
 // --- Corrected ProtectedRoute Component ---
@@ -64,6 +65,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+            path="/chats"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
             <Route // Existing Protected Route for HandTrackingPage
               path="/hand-tracking"
               element={

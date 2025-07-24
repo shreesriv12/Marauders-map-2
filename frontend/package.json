@@ -17,7 +17,7 @@
     "@react-three/fiber": "^9.2.0",
     "@tailwindcss/vite": "^4.1.11",
     "@types/three": "^0.178.1",
-    "axios": "^1.10.0",
+    "axios": "^1.11.0",
     "framer-motion": "^12.23.6",
     "gsap": "^3.13.0",
     "leaflet": "^1.9.4",

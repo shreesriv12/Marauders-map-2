@@ -1,27 +1,18 @@
 import express from 'express';
-import { signup, login } from '../controllers/authController.js'; // Import controller functions
-import { upload } from '../middleware/upload.js'; // Import multer upload middleware
-import authMiddleware from '../middleware/authMiddleware.js'; // Import auth middleware (for protected routes later)
+import multer from 'multer'; // Import multer for file uploads
+import { signup, login, getMe, getAllUsers } from '../controllers/authController.js'; // Ensure getAllUsers is imported
+import authMiddleware from '../middleware/authMiddleware.js'; // Your existing auth middleware
 
 const router = express.Router();
 
-// Register route:
-// Use upload.single('profilePicture') directly as middleware.
-// Multer will parse the 'multipart/form-data' and populate req.body (for text fields)
-// and req.file (for the uploaded file).
-// Any Multer-specific errors (like file size limits) will be handled by Multer itself
-// or can be caught by a general Express error handling middleware if you set one up.
-router.post('/register',
-  upload.single('profilePicture'), // Multer middleware to handle file upload
-  signup // The signup controller
-);
+// Configure multer for in-memory storage
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-// Login route
+router.post('/register', upload.single('avatar'), signup); // 'avatar' is the field name for the file, consistent with authController
 router.post('/login', login);
 
-// Example of a protected route (requires JWT)
-// router.get('/profile', authMiddleware, (req, res) => {
-//   res.json({ message: `Welcome, user ${req.userId}! This is a protected route.` });
-// });
+router.get('/me', authMiddleware, getMe); // Protected route to get current user profile
+router.get('/users', authMiddleware, getAllUsers); // This is the missing route!
 
 export default router;

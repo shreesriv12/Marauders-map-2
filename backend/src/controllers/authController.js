@@ -25,6 +25,7 @@ export const signup = async (req, res) => {
     } = req.body;
 
     // Basic server-side validation
+    // CORRECTED: `!!password` should be `!password`
     if (!fullName || !username || !email || !password) {
       return res.status(400).json({ message: "Please enter all required fields." });
     }
@@ -142,4 +143,30 @@ export const login = async (req, res) => {
     console.error("Login failed:", err.message);
     res.status(500).json({ message: "Login failed", error: err.message });
   }
+};
+
+/**
+ * @desc Get current user profile
+ * @route GET /api/auth/me
+ * @access Private
+ */
+export const getMe = async (req, res) => {
+    // req.user is populated by the authMiddleware
+    res.json(req.user);
+};
+
+/**
+ * @desc Get all users (for finding chat partners, etc.)
+ * @route GET /api/auth/users
+ * @access Private
+ */
+export const getAllUsers = async (req, res) => {
+    try {
+        // Exclude the current user from the list and remove password field
+        const users = await User.find({ _id: { $ne: req.user._id } }).select('-password');
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching all users:', error);
+        res.status(500).json({ message: 'Server error fetching users' });
+    }
 };
