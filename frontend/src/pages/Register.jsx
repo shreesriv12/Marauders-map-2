@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { Camera, Upload, Wand2, Home, User, Mail, Lock, LockKeyhole, Calendar, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import useRegistrationStore from '../store/useStore'; // Import the auth store (renamed for clarity)
+import useRegistrationStore from '../store/useStore';
 
 const WizardRegistration = () => {
   const navigate = useNavigate();
 
-  // Use the auth store
-  const { signup, isLoading, error, clearError } = useRegistrationStore(); // Corrected import name
+  const { signup, isLoading, error, clearError } = useRegistrationStore();
 
-  // Local state for form data
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
@@ -146,21 +144,18 @@ const WizardRegistration = () => {
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear any existing errors when user starts typing
     if (error) clearError();
   };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // For preview: Store Base64 string in formData.profilePicture
       const reader = new FileReader();
       reader.onload = (e) => {
         setFormData(prev => ({ ...prev, profilePicture: e.target.result }));
       };
       reader.readAsDataURL(file);
 
-      // Store the actual File object for upload
       setFormData(prev => ({ ...prev, profilePictureFile: file }));
     } else {
       setFormData(prev => ({ ...prev, profilePicture: null, profilePictureFile: null }));
@@ -217,11 +212,11 @@ const WizardRegistration = () => {
   };
 
   const handleSubmit = async () => {
-    // Prepare data for the signup function
     let dataToSend;
 
+    // --- CRITICAL CHANGE HERE ---
+    // Ensure the field name for the file ('avatar') matches what Multer expects on the backend
     if (formData.profilePictureFile) {
-      // If a file is selected, create FormData
       dataToSend = new FormData();
       dataToSend.append('fullName', formData.fullName);
       dataToSend.append('username', formData.username);
@@ -232,7 +227,8 @@ const WizardRegistration = () => {
       dataToSend.append('favoriteSpell', formData.favoriteSpell);
       dataToSend.append('wandCore', formData.wandCore);
       dataToSend.append('petCompanion', formData.petCompanion);
-      dataToSend.append('profilePicture', formData.profilePictureFile); // Append the actual file
+      // Change 'profilePicture' to 'avatar' to match backend Multer configuration
+      dataToSend.append('avatar', formData.profilePictureFile);
     } else {
       // If no file, send as JSON object
       dataToSend = {
@@ -245,21 +241,19 @@ const WizardRegistration = () => {
         favoriteSpell: formData.favoriteSpell,
         wandCore: formData.wandCore,
         petCompanion: formData.petCompanion,
+        // No avatar field here if it's optional and not provided
       };
     }
 
     try {
-      // Use the auth store's signup function with the prepared data
-      const response = await signup(dataToSend); // Pass FormData or plain object
+      const response = await signup(dataToSend);
 
       if (response.success) {
-        // If successful, show success message and navigate
         showMessageBox(
           'Welcome to Hogwarts!',
           'Your magical journey begins now! 🎉',
           '🎓',
           () => {
-            // Reset form
             setFormData({
               fullName: '',
               username: '',
@@ -281,8 +275,6 @@ const WizardRegistration = () => {
           }
         );
       } else {
-        // Error handling is already done in the auth store,
-        // but we can use the message from the response for the message box
         showMessageBox(
           'Registration Failed!',
           response.message || 'Something went wrong. Please try again.',
@@ -290,11 +282,10 @@ const WizardRegistration = () => {
         );
       }
     } catch (err) {
-      // This catch block will primarily handle network errors not caught by fetch response.ok
       console.error("Registration form submission error:", err);
       showMessageBox(
         'Registration Failed!',
-        error || 'An unexpected error occurred during registration.', // Use error from store or generic
+        error || 'An unexpected error occurred during registration.',
         '❌'
       );
     }
@@ -417,6 +408,7 @@ const WizardRegistration = () => {
                     <Camera className="h-4 w-4 text-white" />
                     <input
                       type="file"
+                      id="avatar" // This ID is fine, but the name in formData.append matters more
                       accept="image/*"
                       onChange={handleFileUpload}
                       className="hidden"

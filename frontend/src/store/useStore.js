@@ -2,30 +2,58 @@
 
 import { create } from 'zustand';
 
-const useRegistrationStore = create((set, get) => ({
-  registeredUser: null,
-  token: null,
-  isLoading: false, // Added isLoading state
-  error: null,      // Added error state
+// Function to get initial state from localStorage
+const getInitialState = () => {
+  let user = null;
+  let token = null;
+  try {
+    token = localStorage.getItem('authToken');
+    // You might also store user details in localStorage if needed,
+    // but typically the token is enough for re-authentication on page load.
+    // For this case, we'll primarily rely on the token.
+    if (token) {
+        // If a token exists, you might want to fetch user details or
+        // just assume a basic registeredUser object for initial checks
+        // until a full user profile is loaded.
+        // For simplicity, let's just make sure `registeredUser` is not null if a token exists.
+        // A more robust solution would involve an initial API call to validate the token and fetch user details.
+        // For now, let's assume if there's a token, there's a "user" logged in.
+        // You might need to adjust this based on your backend's authentication flow.
+        user = { username: 'Authenticated User (from token)' }; // Placeholder username
+    }
+  } catch (e) {
+    console.error("Failed to read from localStorage:", e);
+  }
+  return {
+    registeredUser: user,
+    token: token,
+    isLoading: false,
+    error: null,
+  };
+};
 
-  // Actions
+const useRegistrationStore = create((set, get) => ({
+  ...getInitialState(), // Initialize state from localStorage
+
+  // Actions (rest remain the same)
   setRegisteredUser: (user) => set({ registeredUser: user }),
   setToken: (token) => set({ token: token }),
-  setLoading: (loading) => set({ isLoading: loading }), // Added setLoading action
-  setError: (error) => set({ error: error }),           // Added setError action
-  clearError: () => set({ error: null }),               // Added clearError action
-  resetForm: () => set({ registeredUser: null, token: null, isLoading: false, error: null }),
+  setLoading: (loading) => set({ isLoading: loading }),
+  setError: (error) => set({ error: error }),
+  clearError: () => set({ error: null }),
+  resetForm: () => {
+    localStorage.removeItem('authToken'); // Clear token on logout/reset
+    set({ registeredUser: null, token: null, isLoading: false, error: null });
+  },
 
-  // Modified signup action to handle FormData for file uploads
-  signup: async (data) => { // 'data' can now be a plain object or FormData
-    set({ isLoading: true, error: null }); // Set loading and clear previous errors
+  signup: async (data) => {
+    set({ isLoading: true, error: null });
     try {
       let requestBody;
       let requestHeaders = {};
 
       if (data instanceof FormData) {
         requestBody = data;
-        // Do NOT set Content-Type for FormData, browser handles it
       } else {
         requestBody = JSON.stringify(data);
         requestHeaders['Content-Type'] = 'application/json';
@@ -68,7 +96,7 @@ const useRegistrationStore = create((set, get) => ({
   },
 
   login: async (credentials) => {
-    set({ isLoading: true, error: null }); // Set loading and clear previous errors
+    set({ isLoading: true, error: null });
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',

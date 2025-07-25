@@ -4,60 +4,56 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import jwt from 'jsonwebtoken'; // Needed for Socket.IO authentication
+import jwt from 'jsonwebtoken';
 
-// Import your existing models
-import User from './src/models/User.js'; // Your User model
-import Message from './src/models/Chats.js'; // CORRECTED: Import your Message model
+import User from './src/models/User.js';
+import Message from './src/models/Chats.js';
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO server on the same HTTP server
 const io = new SocketIOServer(server, {
     cors: {
-        origin: "*", // Allow all origins for development. In production, specify your frontend URL.
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
 
+// --- Global State for Marauder's Map ---
+let isGlobalMapActive = false; // <<< NEW GLOBAL FLAG
 // --- In-Memory Storage for Online Status and Marauder's Map ---
-// This map will store logged-in users and their primary socket IDs for chat.
-// Key: userId (string), Value: socketId (string)
 const onlineChatUsers = new Map();
 
 // This map will store Marauder's Map specific data.
-// Key: userId (string), Value: { latitude, longitude, lastUpdate, isTrackingActive, socketId, name }
-const maraudersMapUsers = {}; // Renamed for clarity from activeUsers
-
+// Key: userId (string), Value: { latitude, longitude, lastUpdate, socketId, name }
+// isTrackingActive is now controlled by isGlobalMapActive
+const maraudersMapUsers = {};
 
 // --- Middleware ---
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// --- CORRECTED: Import your existing routes here ---
 import authRoutes from './src/routes/authRoutes.js';
 import newsRoutes from './src/routes/newsRoutes.js';
 import transfigurationRoutes from './src/routes/transfigurationRoutes.js';
-import chatRoutes from './src/routes/chatRoutes.js'; // Import your chat routes
+import chatRoutes from './src/routes/chatRoutes.js';
 
 // --- Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api', transfigurationRoutes);
-app.use('/api/chats', chatRoutes); // Use your chat routes here
+app.use('/api/chats', chatRoutes);
 
-// Basic test route
 app.get('/', (req, res) => {
     res.status(200).json({ message: 'Hogwarts Backend is running!' });
 });
 
 // --- Socket.IO Authentication Middleware ---
 io.use(async (socket, next) => {
-    const token = socket.handshake.auth.token; // Client must send token in handshake.auth.token
+    const token = socket.handshake.auth.token;
     if (!token) {
         console.warn('Socket.IO Auth: No token provided');
         return next(new Error('Authentication error: No token provided.'));
@@ -65,8 +61,6 @@ io.use(async (socket, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // --- CRITICAL CORRECTION: Use decoded.id as per your JWT payload ---
         const user = await User.findById(decoded.id).select('-password');
 
         if (!user) {
@@ -74,33 +68,25 @@ io.use(async (socket, next) => {
             return next(new Error('Authentication error: User not found.'));
         }
 
-        // Attach the authenticated user object to the socket for easy access in subsequent handlers
         socket.user = user;
-        next(); // Allow the connection
+        next();
     } catch (error) {
         console.error('Socket.IO Auth: Token verification error:', error.message);
         next(new Error('Authentication error: Invalid token.'));
     }
 });
 
-
 // --- Socket.IO Connection Handler ---
 io.on('connection', (socket) => {
-    // At this point, socket.user is guaranteed to be available and valid due to the middleware
     const userId = socket.user._id.toString();
     const username = socket.user.username;
     console.log(`[Connect] User connected: ${socket.id} (User ID: ${userId}, Username: ${username})`);
 
     // --- CHAT SYSTEM LOGIC ---
-    // Add user to online chat users map
-    // For simplicity, assuming one active chat session per user (last one wins).
     onlineChatUsers.set(userId, socket.id);
-
-    // Broadcast the updated list of online chat users to all clients
     io.emit('online_users_update', Array.from(onlineChatUsers.keys()));
     console.log("Online chat users:", Array.from(onlineChatUsers.keys()));
 
-    // Event for sending a private message
     socket.on('send_message', async ({ receiverId, content }) => {
         try {
             if (!receiverId || !content || content.trim() === '') {
@@ -112,25 +98,20 @@ io.on('connection', (socket) => {
 
             const senderId = socket.user._id;
 
-            // Save message to database using the Message model
             const message = await Message.create({
                 sender: senderId,
                 receiver: receiverId,
                 content: content.trim(),
             });
 
-            // Populate sender details for real-time broadcast
-            // This ensures the frontend gets full user objects, just like fetched past messages
             const populatedMessage = await message.populate('sender', 'username avatarUrl fullName');
 
-            // Emit message to the receiver if they are online
             const receiverSocketId = onlineChatUsers.get(receiverId);
             if (receiverSocketId) {
                 io.to(receiverSocketId).emit('receive_message', populatedMessage);
                 console.log(`[Chat] Message from ${username} to ${receiverId} broadcasted to receiver.`);
             }
 
-            // Also emit to the sender's own client to update their chat window instantly
             io.to(socket.id).emit('receive_message', populatedMessage);
             console.log(`[Chat] Message from ${username} to ${receiverId} broadcasted to sender.`);
 
@@ -140,8 +121,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Event for fetching past messages between two users (handled by REST endpoint now, but keeping this for reference)
-    // You might remove this if the REST API is the primary way to get history.
     socket.on('fetch_messages', async ({ otherUserId }) => {
         try {
             if (!otherUserId || !mongoose.Types.ObjectId.isValid(otherUserId)) {
@@ -167,32 +146,25 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- MARAUDER'S MAP SPECIFIC LOGIC (Updated to use socket.user) ---
+    // --- MARAUDER'S MAP SPECIFIC LOGIC (UPDATED) ---
 
-    // Initialize user in maraudersMapUsers if not present
-    if (!maraudersMapUsers[userId]) {
-        maraudersMapUsers[userId] = {
-            socketId: socket.id,
-            latitude: null,
-            longitude: null,
-            lastUpdate: Date.now(),
-            isTrackingActive: false, // Default to not tracking for Marauder's Map
-            name: username // Use username from authenticated user
-        };
-    } else {
-        maraudersMapUsers[userId].socketId = socket.id; // Update socket ID if user reconnects
-        maraudersMapUsers[userId].name = username; // Ensure name is up-to-date
-    }
+    // Initialize user in maraudersMapUsers
+    maraudersMapUsers[userId] = {
+        ...maraudersMapUsers[userId], // Preserve existing location/lastUpdate if user reconnects
+        socketId: socket.id,
+        name: username
+    };
+    // No longer initializing isTrackingActive here, it's controlled by isGlobalMapActive
 
-    // Send the current map activation status to the newly connected user
-    io.to(socket.id).emit('mapActivationStatus', maraudersMapUsers[userId].isTrackingActive);
-    console.log(`[Marauder's Map] Sent mapActivationStatus (${maraudersMapUsers[userId].isTrackingActive}) to ${username}`);
+    // Send the GLOBAL map activation status to the newly connected user
+    io.to(socket.id).emit('mapActivationStatus', isGlobalMapActive); // <<< send global status
+    console.log(`[Marauder's Map] Sent mapActivationStatus (${isGlobalMapActive}) to ${username} on connect.`);
 
-    // If the map is already active for this user, send them the current active users
-    if (maraudersMapUsers[userId].isTrackingActive) {
+    // If the map is globally active, send existing active users to the connecting client
+    if (isGlobalMapActive) {
         const usersToSend = {};
         for (const id in maraudersMapUsers) {
-            if (maraudersMapUsers[id].isTrackingActive && maraudersMapUsers[id].latitude !== null && maraudersMapUsers[id].longitude !== null) {
+            if (maraudersMapUsers[id].latitude !== null && maraudersMapUsers[id].longitude !== null) { // Only send users with known locations
                 usersToSend[id] = {
                     userId: id,
                     latitude: maraudersMapUsers[id].latitude,
@@ -202,12 +174,10 @@ io.on('connection', (socket) => {
             }
         }
         io.to(socket.id).emit('activeUsers', usersToSend);
-        console.log(`[Marauder's Map] Sent initial activeUsers to ${username}`);
+        console.log(`[Marauder's Map] Sent initial activeUsers to ${username} because map is globally active.`);
     }
 
-
-    // Event listener for location updates from clients (Marauder's Map)
-    // Frontend sends: { latitude, longitude } (userId derived from socket.user)
+    // Event listener for location updates from clients
     socket.on('sendLocation', (data) => {
         console.log(`[Marauder's Map] Received location from ${username} (Socket: ${socket.id}): Lat ${data.latitude}, Lng ${data.longitude}`);
 
@@ -216,7 +186,8 @@ io.on('connection', (socket) => {
             maraudersMapUsers[userId].longitude = data.longitude;
             maraudersMapUsers[userId].lastUpdate = Date.now();
 
-            if (maraudersMapUsers[userId].isTrackingActive) {
+            // Only broadcast if the map is globally active
+            if (isGlobalMapActive) { // <<< Use global flag
                 socket.broadcast.emit('locationUpdate', {
                     userId: userId,
                     latitude: data.latitude,
@@ -225,62 +196,28 @@ io.on('connection', (socket) => {
                 });
                 console.log(`[Marauder's Map] Broadcasting location update for ${username}`);
             } else {
-                console.log(`[Marauder's Map] User ${username} is not active, not broadcasting location.`);
+                console.log(`[Marauder's Map] Map is globally inactive, not broadcasting location for ${username}.`);
             }
         }
     });
 
-    // Event listener for map activation spell (Marauder's Map)
-    socket.on('activateMap', () => { // No need for userId in data, it's from socket.user
-        if (maraudersMapUsers[userId]) {
-            maraudersMapUsers[userId].isTrackingActive = true;
-            console.log(`[Marauder's Map] User ${username} activated the Marauder's Map.`);
-
-            io.to(socket.id).emit('mapActivationStatus', true);
-
-            const usersToSend = {};
-            for (const id in maraudersMapUsers) {
-                if (maraudersMapUsers[id].isTrackingActive && maraudersMapUsers[id].latitude !== null && maraudersMapUsers[id].longitude !== null) {
-                    usersToSend[id] = {
-                        userId: id,
-                        latitude: maraudersMapUsers[id].latitude,
-                        longitude: maraudersMapUsers[id].longitude,
-                        name: maraudersMapUsers[id].name
-                    };
-                }
-            }
-            io.to(socket.id).emit('activeUsers', usersToSend);
-            console.log(`[Marauder's Map] Sent initial activeUsers to ${username}`);
-
-            if (maraudersMapUsers[userId].latitude !== null && maraudersMapUsers[userId].longitude !== null) {
-                socket.broadcast.emit('locationUpdate', {
-                    userId: userId,
-                    latitude: maraudersMapUsers[userId].latitude,
-                    longitude: maraudersMapUsers[userId].longitude,
-                    name: username
-                });
-                console.log(`[Marauder's Map] Broadcasting initial location for newly active user ${username}`);
-            }
+    // Event listener for map activation spell
+    socket.on('activateMap', () => {
+        if (!isGlobalMapActive) { // Only activate if not already active
+            isGlobalMapActive = true; // <<< Set global flag to true
+            console.log(`[Marauder's Map] Map globally activated by ${username}.`);
+            io.emit('mapActivationStatus', true); // <<< Broadcast to ALL clients
+            console.log(`[Marauder's Map] Broadcasted mapActivationStatus (true) to all clients.`);
+        } else {
+            console.log(`[Marauder's Map] Map already globally active. Confirming status to ${username}.`);
+            io.to(socket.id).emit('mapActivationStatus', true); // Confirm to sender
         }
-    });
 
-    // Event listener for "Mischief Managed" (deactivation) (Marauder's Map)
-    socket.on('deactivateMap', () => { // No need for userId in data
-        if (maraudersMapUsers[userId]) {
-            maraudersMapUsers[userId].isTrackingActive = false;
-            console.log(`[Marauder's Map] User ${username} deactivated the Marauder's Map.`);
-            io.to(socket.id).emit('mapActivationStatus', false);
-            socket.broadcast.emit('userLeft', { userId: userId });
-            console.log(`[Marauder's Map] Broadcasted userLeft for ${username}`);
-        }
-    });
-
-    // Event listener for requesting active users (e.g., when map becomes active) (Marauder's Map)
-    socket.on('requestActiveUsers', () => { // No need for userId in data
-        console.log(`[Marauder's Map] Socket ${socket.id} (User ID: ${username}) requested active users.`);
+        // Always send initial active users to the user who just activated/re-activated their view
         const usersToSend = {};
         for (const id in maraudersMapUsers) {
-            if (maraudersMapUsers[id].isTrackingActive && maraudersMapUsers[id].latitude !== null && maraudersMapUsers[id].longitude !== null) {
+            // Only include users who have sent a location at least once
+            if (maraudersMapUsers[id].latitude !== null && maraudersMapUsers[id].longitude !== null) {
                 usersToSend[id] = {
                     userId: id,
                     latitude: maraudersMapUsers[id].latitude,
@@ -290,11 +227,59 @@ io.on('connection', (socket) => {
             }
         }
         io.to(socket.id).emit('activeUsers', usersToSend);
-        console.log(`[Marauder's Map] Sent active users to Socket ${socket.id}`);
+        console.log(`[Marauder's Map] Sent activeUsers to ${username} after activation.`);
+
+        // If the activating user has a location, also broadcast their current location
+        if (maraudersMapUsers[userId].latitude !== null && maraudersMapUsers[userId].longitude !== null) {
+            socket.broadcast.emit('locationUpdate', {
+                userId: userId,
+                latitude: maraudersMapUsers[userId].latitude,
+                longitude: maraudersMapUsers[userId].longitude,
+                name: username
+            });
+            console.log(`[Marauder's Map] Broadcasting initial location for newly active user ${username} (after global activation).`);
+        }
+    });
+
+    // Event listener for "Mischief Managed" (deactivation)
+    socket.on('deactivateMap', () => {
+        if (isGlobalMapActive) { // Only deactivate if currently active
+            isGlobalMapActive = false; // <<< Set global flag to false
+            console.log(`[Marauder's Map] Map globally deactivated by ${username}.`);
+            io.emit('mapActivationStatus', false); // <<< Broadcast to ALL clients
+            console.log(`[Marauder's Map] Broadcasted mapActivationStatus (false) to all clients.`);
+        } else {
+            console.log(`[Marauder's Map] Map already globally inactive. Confirming status to ${username}.`);
+            io.to(socket.id).emit('mapActivationStatus', false); // Confirm to sender
+        }
+        // When the map deactivates, we don't necessarily need to immediately remove users from maraudersMapUsers,
+        // as they might reactivate it later. But we do need to tell clients to clear their maps.
+        // The 'mapActivationStatus: false' handles this on the client.
+    });
+
+    // Event listener for requesting active users (e.g., when map becomes active on frontend)
+    socket.on('requestActiveUsers', () => {
+        console.log(`[Marauder's Map] Socket ${socket.id} (User ID: ${username}) requested active users.`);
+        const usersToSend = {};
+        // Only send active users if the map is globally active
+        if (isGlobalMapActive) { // <<< Use global flag here
+            for (const id in maraudersMapUsers) {
+                // Only send users who have sent a location and are not the requesting user (to avoid duplicate markers on own map)
+                if (id !== userId && maraudersMapUsers[id].latitude !== null && maraudersMapUsers[id].longitude !== null) {
+                    usersToSend[id] = {
+                        userId: id,
+                        latitude: maraudersMapUsers[id].latitude,
+                        longitude: maraudersMapUsers[id].longitude,
+                        name: maraudersMapUsers[id].name
+                    };
+                }
+            }
+        }
+        io.to(socket.id).emit('activeUsers', usersToSend);
+        console.log(`[Marauder's Map] Sent active users to Socket ${socket.id} (map globally active: ${isGlobalMapActive}).`);
     });
 
     // --- End Marauder's Map Specific Socket.IO Events ---
-
 
     // --- Existing News Feed Socket.IO Events (Unchanged, no direct user ID dependency) ---
     socket.on('joinNewsFeed', (category) => {
@@ -312,42 +297,48 @@ io.on('connection', (socket) => {
             console.log(`${socket.id} left news feed for category: ${category}`);
         } else {
             console.warn(`Invalid category received from ${socket.id}: ${category}`);
-        }
-    });
-    // --- End Existing News Feed Socket.IO Events ---
+           }
+    });
+    // --- End Existing News Feed Socket.IO Events ---
 
-    // --- Disconnect Handler (Combined) ---
-    socket.on('disconnect', () => {
-        const disconnectedUserId = socket.user._id.toString(); // Get user ID before it's gone
-        const disconnectedUsername = socket.user.username;
-        console.log(`[Disconnect] User disconnected: ${socket.id} (User ID: ${disconnectedUserId}, Username: ${disconnectedUsername})`);
+    // --- Disconnect Handler (Combined) ---
+    socket.on('disconnect', () => {
+        const disconnectedUserId = socket.user._id.toString();
+        const disconnectedUsername = socket.user.username;
+        console.log(`[Disconnect] User disconnected: ${socket.id} (User ID: ${disconnectedUserId}, Username: ${disconnectedUsername})`);
 
-        // Clean up CHAT SYSTEM data
-        onlineChatUsers.delete(disconnectedUserId);
-        io.emit('online_users_update', Array.from(onlineChatUsers.keys()));
-        console.log("Online chat users after disconnect:", Array.from(onlineChatUsers.keys()));
+        // Clean up CHAT SYSTEM data
+        onlineChatUsers.delete(disconnectedUserId);
+        io.emit('online_users_update', Array.from(onlineChatUsers.keys()));
+        console.log("Online chat users after disconnect:", Array.from(onlineChatUsers.keys()));
 
-
-        // Clean up MARAUDER'S MAP specific data
-        if (maraudersMapUsers[disconnectedUserId]) {
-            io.emit('userLeft', { userId: disconnectedUserId }); // Broadcast to all map users
-            console.log(`[Disconnect] Broadcasted userLeft for ${disconnectedUsername} (Marauder's Map).`);
-            delete maraudersMapUsers[disconnectedUserId]; // Remove from activeUsers list
-            console.log(`[Disconnect] User ${disconnectedUsername} removed from maraudersMapUsers.`);
-        }
-    });
+        // Clean up MARAUDER'S MAP specific data (remove their location, but don't deactivate map globally)
+        if (maraudersMapUsers[disconnectedUserId]) {
+            if (isGlobalMapActive) { // Only broadcast userLeft if the map is actually active
+                io.emit('userLeft', { userId: disconnectedUserId }); // Broadcast to all map users
+                console.log(`[Disconnect] Broadcasted userLeft for ${disconnectedUsername} (Marauder's Map).`);
+            }
+            // Important: Don't delete maraudersMapUsers[disconnectedUserId] entirely
+            // just set their location to null and isTrackingActive to false
+            // This preserves their entry if they log in again and allows them to quickly reactivate
+            maraudersMapUsers[disconnectedUserId].latitude = null;
+            maraudersMapUsers[disconnectedUserId].longitude = null;
+            maraudersMapUsers[disconnectedUserId].socketId = null; // Clear socketId
+            // maraudersMapUsers[disconnectedUserId].isTrackingActive = false; // No longer needed as it's global
+            console.log(`[Disconnect] User ${disconnectedUsername}'s location cleared from maraudersMapUsers.`);
+        }
+    });
 });
 
 
 // --- Database Connection & Server Start ---
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => {
-        console.log('MongoDB connected');
-        const PORT = process.env.PORT || 5000;
-        server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-    })
-    .catch((err) => console.error('MongoDB connection error:', err));
+    .then(() => {
+        console.log('MongoDB connected');
+        const PORT = process.env.PORT || 5000;
+        server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    })
+    .catch((err) => console.error('MongoDB connection error:', err));
 
-// Export `io` and `app` for potential use in other modules (e.g., if you need to emit from a REST endpoint)
 export { io };
 export default app;

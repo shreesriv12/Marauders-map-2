@@ -1,0 +1,324 @@
+/* Import Google Font for Handwriting Effect */
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Caveat:wght@400;700&display=swap');
+
+/* Basic reset/body styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif; /* Default fallback */
+}
+
+.diary-book-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(to bottom right, #1f2937, #111827); /* Dark background */
+    padding: 20px;
+    position: relative;
+    overflow: hidden; /* Hide overflow from book shadow, etc. */
+    box-sizing: border-box;
+}
+
+/* --- Book Cover Styles --- */
+.diary-book-cover {
+    width: 350px;
+    height: 500px;
+    background: linear-gradient(to bottom right, #4a2c1a, #2c1a0e); /* Dark brown leather */
+    border: 5px solid #6f4e37; /* Lighter brown border */
+    border-radius: 8px;
+    box-shadow: 15px 15px 30px rgba(0, 0, 0, 0.7), /* Main shadow */
+                inset 0 0 20px rgba(0, 0, 0, 0.5); /* Inner shadow for depth */
+    position: relative;
+    transition: transform 1.5s ease-in-out, opacity 1.5s ease-in-out;
+    transform-origin: left center; /* Rotate from the left edge for closing */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: #fbd38d; /* Gold-like text */
+    font-family: 'Georgia', serif;
+    padding: 20px;
+    perspective: 1000px; /* For 3D effect on cover */
+    z-index: 30; /* Ensure cover is above pages when closing */
+}
+
+.diary-book-cover.closed {
+    /* Transforms to make it look like it's flipping closed and moving off-screen */
+    transform: rotateY(-90deg) translateX(-175px);
+    opacity: 0;
+    pointer-events: none; /* Make it unclickable when hidden */
+}
+
+.book-title {
+    font-size: 2.8rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+    line-height: 1.2;
+}
+
+.book-spine {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px; /* Width of the spine */
+    height: 100%;
+    background: linear-gradient(to right, #2c1a0e, #4a2c1a, #2c1a0e);
+    border-right: 2px solid #6f4e37;
+    border-left: 2px solid #6f4e37;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    box-shadow: inset 3px 0 5px rgba(0, 0, 0, 0.4);
+}
+
+.book-clasp {
+    position: absolute;
+    right: -15px; /* Position off the edge */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 60px;
+    background-color: #fbd38d; /* Gold color */
+    border: 2px solid #a07d3a;
+    border-radius: 5px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+    z-index: 10;
+}
+
+/* --- Page Styles --- */
+.diary-pages-wrapper {
+    position: absolute;
+    width: 700px; /* Total width for two pages side-by-side */
+    height: 550px; /* Fixed height for the open book */
+    display: flex;
+    gap: 10px; /* Space between pages */
+    /* Adjust to make it look like an open book, positioned slightly right of center */
+    transform: translateX(100px);
+    transition: transform 1.5s ease-in-out, opacity 1.5s ease-in-out;
+}
+
+.diary-page {
+    width: 345px; /* Half of wrapper minus gap */
+    height: 100%; /* Take full height of wrapper */
+    background-color: #fcf8e3; /* Off-white page color */
+    border: 1px solid #d1d5db; /* Light grey border */
+    border-radius: 5px;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3), /* Page shadow */
+                inset 0 0 10px rgba(0, 0, 0, 0.1); /* Inner page shadow */
+    padding: 20px;
+    position: relative; /* For pen positioning */
+    /* IMPORTANT: Apply flexbox for layout of internal elements */
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box; /* Include padding in width/height */
+    overflow: hidden; /* Hide general overflow, specific elements will have auto-scroll */
+}
+
+/* Specific page transitions */
+.prompt-page {
+    transition: transform 0.8s ease-in-out, opacity 0.8s ease-in-out;
+    transform-origin: right center; /* Rotate from the right edge */
+    z-index: 20; /* Ensure it's above the entry page when active */
+}
+
+.prompt-page.hidden-page {
+    /* Flips away and moves left */
+    transform: rotateY(-90deg) translateX(-100%);
+    opacity: 0;
+    pointer-events: none; /* Make it unclickable */
+}
+
+.entry-page {
+    transition: transform 0.8s ease-in-out, opacity 0.8s ease-in-out;
+    transform-origin: left center; /* Rotate from the left edge */
+    z-index: 10;
+    opacity: 0; /* Hidden by default */
+    pointer-events: none;
+    background-color: #fcf8e3; /* Ensure background is set */
+}
+
+.entry-page.visible-page {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Diary Paper Styles applied to specific elements */
+/* These styles define the lines and margins */
+.prompt-textarea, .entry-text {
+    padding-left: 65px; /* Adjust for the red line (60px for line + 5px padding) */
+    padding-top: 15px; /* Adjust for line spacing */
+    line-height: 36px; /* Matches the repeating-linear-gradient line height */
+    box-sizing: border-box; /* Crucial for internal scrolling with padding */
+}
+
+.prompt-textarea {
+    flex-grow: 1; /* Allows textarea to take up remaining vertical space */
+    width: 100%;
+    min-height: 100px; /* Ensure a minimum visible area */
+    max-height: calc(100% - 150px); /* Adjust based on label/button height. e.g., 150px for header + button + margins */
+    background-color: transparent; /* Make sure it's transparent */
+    border: none;
+    outline: none;
+    resize: none; /* Prevent user from resizing the textarea */
+    font-family: 'Caveat', cursive; /* User's handwriting input font */
+    font-size: 1.3rem;
+    color: #333;
+    overflow-y: auto; /* Enable vertical scrolling for the textarea */
+    padding-right: 15px; /* Add padding for scrollbar */
+}
+
+.prompt-label {
+    display: block;
+    font-family: 'Georgia', serif;
+    font-size: 1.2rem;
+    color: #444;
+    margin-bottom: 10px;
+    text-align: center;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 5px;
+    flex-shrink: 0; /* Prevent label from shrinking */
+}
+
+.page-header {
+    border-bottom: 2px solid #ef4444; /* Red line for header */
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    font-family: 'Georgia', serif;
+    color: #444;
+    font-size: 1.2rem;
+    font-weight: bold;
+    padding-left: 65px; /* Align with text lines */
+    flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.entry-text {
+    flex-grow: 1; /* Allows entry text to take up remaining vertical space */
+    min-height: 200px; /* Ensure a minimum visible area */
+    color: #333;
+    font-family: 'Dancing Script', cursive; /* AI's handwriting font */
+    font-size: 1.6rem; /* Larger for better readability of handwriting */
+    line-height: 36px; /* Match the line spacing of the paper effect */
+    position: relative;
+    z-index: 1; /* Ensure text is above pen when not writing */
+    overflow-y: auto; /* Enable vertical scrolling for the entry text */
+    padding-right: 15px; /* Add padding for scrollbar */
+}
+
+
+/* --- Button & Error Styles --- */
+.generate-button {
+    width: 100%;
+    background-color: #ef4444; /* Red button */
+    color: white;
+    font-weight: bold;
+    padding: 12px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+    flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+.generate-button:hover:not(:disabled) {
+    background-color: #dc2626; /* Darker red on hover */
+    transform: scale(1.03); /* Slight scale effect on hover */
+}
+
+.generate-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.error-message {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #fee2e2; /* Light red background */
+    border: 1px solid #ef4444; /* Red border */
+    color: #991b1b; /* Dark red text */
+    border-radius: 8px;
+    font-family: sans-serif;
+    flex-shrink: 0; /* Prevent error message from shrinking */
+}
+
+/* --- Animated Pen Styles --- */
+.animated-pen {
+    position: absolute;
+    transform: rotate(45deg); /* Angle the pen */
+    transition: left 0.05s linear, top 0.05s linear; /* Fast, linear movement for smooth tracking */
+    z-index: 30; /* Ensure pen is above text and other elements */
+    pointer-events: none; /* Make it not interfere with clicks/selection */
+}
+
+.pen-body {
+    width: 8px; /* Thicker pen body */
+    height: 40px; /* Longer pen body */
+    background: linear-gradient(to bottom, #3b2b1e, #1e150f); /* Darker wood/metal effect */
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.pen-tip {
+    position: absolute;
+    bottom: -5px; /* Position relative to pen body */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 10px solid #8b4513; /* Brown for wooden tip */
+    border-radius: 2px;
+}
+
+.pen-tip::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; /* Ink nib effect */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 6px;
+    background-color: #333; /* Dark ink color */
+    border-radius: 0 0 1px 1px;
+}
+
+.pen-glow {
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 15px;
+    height: 15px;
+    background: radial-gradient(circle, #fcd34d 0%, rgba(252, 211, 77, 0) 70%); /* Yellowish glow */
+    border-radius: 50%;
+    animation: penGlow 1.5s infinite alternate; /* Pulsing glow animation */
+    opacity: 0.8;
+}
+
+@keyframes penGlow {
+    from { transform: translateX(-50%) scale(0.8); opacity: 0.6; }
+    to { transform: translateX(-50%) scale(1.1); opacity: 0.9; }
+}
+
+/* Blinking cursor at the end of text */
+.blinking-cursor {
+    display: inline-block;
+    width: 3px;
+    height: 1.2em; /* Adjust based on current font size */
+    background-color: #ef4444; /* Red cursor */
+    animation: blink 0.7s step-end infinite;
+    vertical-align: middle; /* Align with text baseline */
+    margin-left: 2px; /* Small gap from text */
+}
+
+@keyframes blink {
+    from, to { background-color: transparent }
+    50% { background-color: #ef4444; }
+}
+

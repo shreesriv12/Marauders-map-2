@@ -15,9 +15,9 @@ import DailyProphetPage from './pages/DailyProphetPage';
 import AskLibrarianChat from './pages/AskLibrarianChat';
 import MaraudersMap from './pages/Maraudersmap';
 import TransfigurationBooth from './pages/TransfigurationBooth';
-import PotionBrewingGame from './pages/PotionBrewingGame'; // NEW: Import the PotionBrewingGame component
+import PotionBrewingGame from './pages/PotionBrewingGame';
 import ChatPage from './pages/ChatPage';
-
+import Diary from './pages/Diary'; // NEW: Import the Diary component
 
 // --- Corrected ProtectedRoute Component ---
 const ProtectedRoute = ({ children }) => {
@@ -114,6 +114,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <PotionBrewingGame />
+                </ProtectedRoute>
+              }
+            />
+            {/* NEW: Protected Route for Tom Riddle's AI Diary */}
+            <Route
+              path="/diary"
+              element={
+                <ProtectedRoute>
+                  <Diary />
                 </ProtectedRoute>
               }
             />

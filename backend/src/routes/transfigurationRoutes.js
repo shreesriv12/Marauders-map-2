@@ -1,39 +1,56 @@
 import express from 'express';
 import multer from 'multer';
 import axios from 'axios';
-import FormData from 'form-data';
+import FormData from 'form-data'; // Only needed if you need to inspect/modify formData
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/transfigure', upload.single('image'), async (req, res) => {
-  try {
-    const spell = req.body.spell;
+    try {
+        const spell = req.body.spell;
 
-    const formData = new FormData();
-    formData.append('image', req.file.buffer, 'image.jpg');
-    formData.append('spell', spell);
+        // Recreate FormData to send to Flask AI
+        const formData = new FormData();
+        formData.append('image', req.file.buffer, {
+            filename: req.file.originalname || 'image.jpg', // Use original filename if available
+            contentType: req.file.mimetype // Use original mime type
+        });
+        formData.append('spell', spell);
 
-    const response = await axios.post(
-      'http://localhost:5001/ai/transform_image', // Flask AI endpoint
-      formData,
-      {
-        headers: formData.getHeaders(),
-        responseType: 'arraybuffer', // ensures we receive raw image bytes
-      }
-    );
+        // Forward the request to Flask AI endpoint
+        const response = await axios.post(
+            'http://localhost:5001/ai/transform_image', // Flask AI endpoint
+            formData,
+            {
+                headers: {
+                    ...formData.getHeaders(), // Important: include FormData headers for multipart
+                },
+                responseType: 'arraybuffer', // Ensure we receive raw image bytes
+            }
+        );
 
-    const transformed = Buffer.from(response.data, 'binary').toString('base64');
-    const original = req.file.buffer.toString('base64');
+        // Forward Flask AI's response directly to the client
+        // Set the appropriate content type based on the Flask response or the spell
+        // For Evanesco, Flask might return image/png, otherwise image/jpeg
+        // You might need to get Content-Type header from Flask response if it's dynamic
+        const contentType = response.headers['content-type'] || 'image/jpeg'; // Fallback to jpeg
 
-    res.json({
-      originalImageUrl: `data:image/jpeg;base64,${original}`,
-      transformedImageUrl: `data:image/jpeg;base64,${transformed}`,
-    });
-  } catch (err) {
-    console.error('Transfiguration error:', err.message);
-    res.status(500).json({ error: 'Failed to transfigure image' });
-  }
+        res.writeHead(response.status, {
+            'Content-Type': contentType,
+            'Content-Length': response.data.length
+        });
+        res.end(Buffer.from(response.data, 'binary'));
+
+    } catch (err) {
+        console.error('Transfiguration error:', err.message);
+        // Log full error if available, especially response data from Flask
+        if (err.response) {
+            console.error('Flask AI Response Error Status:', err.response.status);
+            console.error('Flask AI Response Error Data:', err.response.data ? Buffer.from(err.response.data).toString('utf8') : 'No data');
+        }
+        res.status(500).json({ error: 'Failed to transfigure image' });
+    }
 });
 
 export default router;

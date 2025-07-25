@@ -12,7 +12,7 @@ delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
     iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
 });
 
 // Custom icon for the current user (e.g., blue marker)
@@ -47,7 +47,7 @@ const HARDCODED_LOCATION_DATA = {
 
 // Magical sparkle animation component
 const MagicalSparkle = ({ delay = 0 }) => (
-    <div 
+    <div
         className="absolute w-1 h-1 bg-yellow-300 rounded-full animate-ping opacity-75"
         style={{
             animationDelay: `${delay}ms`,
@@ -79,11 +79,31 @@ const FloatingFootsteps = () => (
 
 // Main MaraudersMap component
 function MaraudersMap() {
-    const { registeredUser } = useRegistrationStore();
-    
+    // --- Initial state from Zustand ---
+    const { registeredUser, token: zustandToken } = useRegistrationStore();
+
+    // Create refs to hold the latest values of registeredUser and zustandToken
+    const registeredUserRef = useRef(registeredUser);
+    const zustandTokenRef = useRef(zustandToken);
+
+    // Update refs whenever registeredUser or zustandToken changes
+    useEffect(() => {
+        registeredUserRef.current = registeredUser;
+        zustandTokenRef.current = zustandToken;
+        console.log("[DEBUG MaraudersMap] registeredUserRef updated:", registeredUserRef.current);
+        console.log("[DEBUG MaraudersMap] zustandTokenRef updated:", zustandTokenRef.current ? "PRESENT" : "ABSENT");
+    }, [registeredUser, zustandToken]);
+
+
+    // --- DEBUGGING: Initial render (will show initial value then subsequent updates from ref) ---
+    console.log("[DEBUG MaraudersMap] Initial render - registeredUser:", registeredUser);
+    console.log("[DEBUG MaraudersMap] Initial render - Zustand Token:", zustandToken ? "PRESENT" : "ABSENT");
+
+
     const currentUserId = useCallback(() => {
-        if (registeredUser && registeredUser.username) {
-            return registeredUser.username;
+        // Use the ref for the most up-to-date registeredUser
+        if (registeredUserRef.current && registeredUserRef.current.username) {
+            return registeredUserRef.current.username;
         } else {
             let storedAnonId = localStorage.getItem('maraudersMapAnonId');
             if (!storedAnonId) {
@@ -92,7 +112,7 @@ function MaraudersMap() {
             }
             return storedAnonId;
         }
-    }, [registeredUser]);
+    }, []); // Removed registeredUser from dependency as we use ref
 
     const [currentLocation, setCurrentLocation] = useState(null);
     const [otherUsersLocations, setOtherUsersLocations] = useState({});
@@ -109,6 +129,7 @@ function MaraudersMap() {
 
     useEffect(() => {
         isMapActiveRef.current = isMapActive;
+        console.log(`[DEBUG MaraudersMap] isMapActive state changed to: ${isMapActive}`);
     }, [isMapActive]);
 
     // Magical typewriter effect
@@ -127,7 +148,7 @@ function MaraudersMap() {
     };
 
     const updateMarker = useCallback((id, lat, lng, name, isCurrentUser = false) => {
-        console.log(`[updateMarker] Called for ID: ${id}, Name: ${name}, isCurrentUser: ${isCurrentUser}`);
+        console.log(`[updateMarker] Called for ID: ${id}, Name: ${name}, isCurrentUser: ${isCurrentUser}. mapRef.current: ${!!mapRef.current}`);
         if (!mapRef.current) {
             console.warn('[updateMarker] mapRef.current is null, cannot update marker. Map might be deactivated.');
             return;
@@ -156,7 +177,7 @@ function MaraudersMap() {
     }, []);
 
     const removeMarker = useCallback((id) => {
-        console.log(`[removeMarker] Attempting to remove marker for ID: ${id}`);
+        console.log(`[removeMarker] Attempting to remove marker for ID: ${id}. mapRef.current: ${!!mapRef.current}`);
         if (!mapRef.current) {
             console.warn('[removeMarker] mapRef.current is null, cannot remove marker. Map might be deactivated.');
             return;
@@ -172,20 +193,30 @@ function MaraudersMap() {
         }
     }, []);
 
-    // Socket.IO effect (unchanged logic)
+    // Socket.IO effect
     useEffect(() => {
-        const currentId = currentUserId();
+        // Access current values using refs
+        const currentId = currentUserId(); // currentUserId already uses the ref
+        const token = zustandTokenRef.current; // Use the ref for token
 
-        if (!currentId) {
-            console.log('[Socket] Waiting for currentId (username or anonymous UUID) to be available to connect to Socket.IO.');
+        console.log(`[DEBUG Socket.IO Effect] Running. currentId: ${currentId}, token: ${token ? 'PRESENT' : 'ABSENT'}`);
+
+        if (!currentId || !token) {
+            console.log('[Socket] Waiting for currentId and token to be available to connect to Socket.IO. Current state: ', { currentId, token: token ? 'PRESENT' : 'ABSENT' });
             return;
         }
 
-        socketRef.current = io(BACKEND_URL);
+        // Initialize socket with authentication token
+        socketRef.current = io(BACKEND_URL, {
+            auth: {
+                token: token
+            }
+        });
 
         socketRef.current.on('connect', () => {
             console.log('[Socket] Connected to WebSocket server');
-            socketRef.current.emit('registerUser', { userId: currentId, name: registeredUser?.username });
+            // Use registeredUserRef.current for sending the username
+            socketRef.current.emit('registerUser', { userId: currentId, name: registeredUserRef.current?.username });
             console.log(`[Socket] Emitted 'registerUser' for ${currentId}`);
         });
 
@@ -227,17 +258,29 @@ function MaraudersMap() {
         socketRef.current.on('activeUsers', (activeUsersData) => {
             console.log('[Socket] Received activeUsers:', activeUsersData);
             if (isMapActiveRef.current) {
+                // Clear all existing markers first before re-adding
+                Object.values(markersRef.current).forEach(marker => {
+                    if (mapRef.current) mapRef.current.removeLayer(marker);
+                });
+                markersRef.current = {}; // Reset the ref
+
                 const filteredUsers = {};
+                // Add current user's marker if location is known
+                if (currentLocation) {
+                    const userName = registeredUserRef.current?.username || `You (${currentId.substring(0, 8)})`;
+                    updateMarker(currentId, currentLocation.latitude, currentLocation.longitude, userName, true);
+                }
+
+                // Add other active users' markers
                 Object.values(activeUsersData).forEach(user => {
                     if (user.userId !== currentId) {
                         filteredUsers[user.userId] = user;
                         const userName = user.name || `User ${user.userId.substring(0, 8)}`;
                         updateMarker(user.userId, user.latitude, user.longitude, userName, false);
-                    } else {
-                        const userName = user.name || `You (${user.userId.substring(0, 8)})`;
-                        updateMarker(user.userId, user.latitude, user.longitude, userName, true);
                     }
                 });
+
+                // Add hardcoded location if not the current user and not already in activeUsers
                 if (HARDCODED_LOCATION_DATA.userId !== currentId && !filteredUsers[HARDCODED_LOCATION_DATA.userId]) {
                     filteredUsers[HARDCODED_LOCATION_DATA.userId] = HARDCODED_LOCATION_DATA;
                     updateMarker(
@@ -272,6 +315,8 @@ function MaraudersMap() {
             }
         });
 
+        // Dependencies: Only include variables that, if changed, require re-running the effect.
+        // We're now relying on refs for registeredUser and zustandToken inside the event handlers.
         return () => {
             console.log('[Socket] Disconnecting from WebSocket server.');
             if (socketRef.current) {
@@ -282,10 +327,11 @@ function MaraudersMap() {
                 watchIdRef.current = null;
             }
         };
-    }, [currentUserId, updateMarker, removeMarker, registeredUser]);
+    }, [currentUserId, updateMarker, removeMarker, currentLocation]); // Removed registeredUser and zustandToken
 
-    // Map initialization effect (unchanged logic)
+    // Map initialization effect
     useEffect(() => {
+        console.log(`[DEBUG Map Init Effect] Running. isMapActive: ${isMapActive}, mapRef.current: ${!!mapRef.current}`);
         if (isMapActive) {
             if (mapRef.current === null && document.getElementById('map')) {
                 console.log('[Map Init] Initializing new Leaflet map.');
@@ -313,39 +359,43 @@ function MaraudersMap() {
                 console.log('[Map Cleanup] Removing Leaflet map instance and all its layers.');
                 mapRef.current.remove();
                 mapRef.current = null;
-                markersRef.current = {};
+                markersRef.current = {}; // Ensure markers are cleared
+                console.log('[Map Cleanup] Cleared markersRef.current');
             }
         }
     }, [isMapActive, currentLocation]);
 
     const handleGeolocationUpdate = useCallback((position) => {
         const { latitude, longitude } = position.coords;
-        console.log(`[Geolocation] Received update: Lat ${latitude.toFixed(4)}, Lng ${longitude.toFixed(4)}`);
+        console.log(`[Geolocation] Received update: Lat ${latitude.toFixed(4)}, Lng ${longitude.toFixed(4)}. isMapActiveRef.current: ${isMapActiveRef.current}`);
         setCurrentLocation({ latitude, longitude });
 
         const currentId = currentUserId();
 
         if (socketRef.current && isMapActiveRef.current && currentId) {
+            // Use registeredUserRef.current for sending the username
             socketRef.current.emit('sendLocation', {
                 userId: currentId,
                 latitude: latitude,
                 longitude: longitude,
-                name: registeredUser?.username
+                name: registeredUserRef.current?.username
             });
             console.log(`[Geolocation] Emitted 'sendLocation' for ${currentId}. Map Active: ${isMapActiveRef.current}`);
         } else {
             console.log(`[Geolocation] Not emitting 'sendLocation'. Socket: ${socketRef.current ? 'Connected' : 'Disconnected'}, Map Active: ${isMapActiveRef.current}, currentId: ${currentId}`);
         }
         if (isMapActiveRef.current && currentId) {
-            updateMarker(currentId, latitude, longitude, `You (${registeredUser?.username || currentId.substring(0, 8)})`, true);
+            // Use registeredUserRef.current for the display name
+            updateMarker(currentId, latitude, longitude, `You (${registeredUserRef.current?.username || currentId.substring(0, 8)})`, true);
         } else {
             console.log('[Geolocation] Map not active or currentId not available, skipping update of current user marker.');
         }
-    }, [currentUserId, updateMarker, registeredUser]);
+    }, [currentUserId, updateMarker]); // Removed registeredUser
 
-    // Geolocation watch effect (unchanged logic)
+    // Geolocation watch effect
     useEffect(() => {
         const currentId = currentUserId();
+        console.log(`[DEBUG Geolocation Effect] Running. isMapActive: ${isMapActive}, currentId: ${currentId}. watchIdRef.current: ${!!watchIdRef.current}`);
 
         if (isMapActive && currentId) {
             if (!watchIdRef.current && navigator.geolocation) {
@@ -358,6 +408,8 @@ function MaraudersMap() {
                     },
                     { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
                 );
+            } else if (watchIdRef.current) {
+                console.log('[Geolocation Watch] Watch already active, no new watch started.');
             }
         } else {
             if (watchIdRef.current) {
@@ -368,26 +420,41 @@ function MaraudersMap() {
             setCurrentLocation(null);
             console.log('[Geolocation Watch] Current location state cleared.');
             if (currentId) {
+                console.log(`[Geolocation Watch Cleanup] Attempting to remove current user marker (${currentId})`);
                 removeMarker(currentId);
             }
         }
     }, [isMapActive, handleGeolocationUpdate, currentUserId, removeMarker]);
 
     const handleActivateMap = () => {
-        if (!registeredUser || !registeredUser.username) {
+        console.log("[DEBUG handleActivateMap] Called.");
+        // Access current values using refs
+        const currentUser = registeredUserRef.current;
+        const currentToken = zustandTokenRef.current;
+
+        console.log("[DEBUG handleActivateMap] currentUser (from ref):", currentUser);
+        console.log("[DEBUG handleActivateMap] currentUser.username (from ref):", currentUser?.username);
+        console.log("[DEBUG handleActivateMap] currentToken (from ref):", currentToken ? "PRESENT" : "ABSENT");
+
+        if (!currentUser || !currentUser.username || !currentToken) { // Use ref values here
+            console.warn("[DEBUG handleActivateMap] Activation prevented: User is NOT considered logged in.");
             typeWriterEffect("A magical barrier prevents access. You must be properly identified to proceed...");
             setTimeout(() => {
                 alert("You must be logged in to activate the Marauder's Map!");
             }, 2000);
             return;
         }
+        console.log("[DEBUG handleActivateMap] User IS considered logged in. Proceeding to show spell modal.");
         setShowSpellModal(true);
         console.log('[UI] Activate Map button clicked, showing modal.');
     };
 
     const handleSpellSubmit = () => {
         const activationSpell = "i solemnly swear i am up to no good";
-        const currentId = currentUserId();
+        const currentId = currentUserId(); // This already uses the ref
+
+        console.log("[DEBUG handleSpellSubmit] Spell input:", spellInput.toLowerCase().trim());
+        console.log("[DEBUG handleSpellSubmit] Expected spell:", activationSpell.toLowerCase());
 
         if (spellInput.toLowerCase().trim() === activationSpell.toLowerCase()) {
             if (socketRef.current && currentId) {
@@ -397,6 +464,8 @@ function MaraudersMap() {
                 setTimeout(() => {
                     alert("Mischief Managed! The Marauder's Map is now active.");
                 }, 1500);
+            } else {
+                 console.warn("[DEBUG handleSpellSubmit] Could not emit 'activateMap'. Socket:", !!socketRef.current, "currentId:", currentId);
             }
             setShowSpellModal(false);
             setSpellInput('');
@@ -410,7 +479,8 @@ function MaraudersMap() {
     };
 
     const handleMischiefManaged = () => {
-        const currentId = currentUserId();
+        const currentId = currentUserId(); // This already uses the ref
+        console.log("[DEBUG handleMischiefManaged] Called.");
 
         if (socketRef.current && currentId) {
             socketRef.current.emit('deactivateMap', { userId: currentId });
@@ -419,10 +489,15 @@ function MaraudersMap() {
             setTimeout(() => {
                 alert("Map deactivated. Mischief managed.");
             }, 1500);
+        } else {
+             console.warn("[DEBUG handleMischiefManaged] Could not emit 'deactivateMap'. Socket:", !!socketRef.current, "currentId:", currentId);
         }
     };
 
-    const displayUserName = registeredUser?.username || (currentUserId() ? currentUserId().substring(0, 8) : 'Stranger');
+    // Use registeredUserRef.current for the display name for consistency
+    const displayUserName = registeredUserRef.current?.username || (currentUserId() ? currentUserId().substring(0, 8) : 'Stranger');
+    console.log("[DEBUG MaraudersMap] Displaying username:", displayUserName);
+
 
     return (
         <div className="min-h-screen relative overflow-hidden" style={{
@@ -455,18 +530,18 @@ function MaraudersMap() {
 
             <div className="relative z-10 flex flex-col items-center p-4">
                 {/* Parchment-style container */}
-                <div className="relative bg-amber-50 p-8 rounded-lg shadow-2xl w-full max-w-6xl text-center transform transition-all duration-500 hover:scale-[1.02]" 
+                <div className="relative bg-amber-50 p-8 rounded-lg shadow-2xl w-full max-w-6xl text-center transform transition-all duration-500 hover:scale-[1.02]"
                      style={{
                          backgroundImage: `
                              radial-gradient(circle at 25% 25%, rgba(139, 69, 19, 0.1) 0%, transparent 50%),
                              radial-gradient(circle at 75% 75%, rgba(160, 82, 45, 0.1) 0%, transparent 50%),
                              linear-gradient(45deg, transparent 49%, rgba(139, 69, 19, 0.05) 50%, transparent 51%),
                              url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4a574' fill-opacity='0.08'%3E%3Cpath d='M0 0h60v60H0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")
-                         `,
+                             `,
                          border: '3px solid #8B4513',
                          boxShadow: 'inset 0 0 20px rgba(139, 69, 19, 0.2), 0 0 40px rgba(0, 0, 0, 0.5)'
                      }}>
-                    
+
                     {/* Decorative corners */}
                     <div className="absolute top-2 left-2 w-8 h-8 border-l-4 border-t-4 border-amber-800 rounded-tl-lg"></div>
                     <div className="absolute top-2 right-2 w-8 h-8 border-r-4 border-t-4 border-amber-800 rounded-tr-lg"></div>
@@ -478,8 +553,8 @@ function MaraudersMap() {
 
                     {/* Title with magical styling */}
                     <div className="relative mb-8">
-                        <h1 className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-800 via-yellow-700 to-amber-900 mb-2 tracking-wider" 
-                            style={{ 
+                        <h1 className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-800 via-yellow-700 to-amber-900 mb-2 tracking-wider"
+                            style={{
                                 fontFamily: 'serif',
                                 textShadow: '2px 2px 4px rgba(139, 69, 19, 0.3)',
                                 filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.3))'
@@ -549,7 +624,7 @@ function MaraudersMap() {
                                      border: '3px solid #8B4513',
                                      boxShadow: '0 0 50px rgba(255, 215, 0, 0.3), inset 0 0 20px rgba(139, 69, 19, 0.2)'
                                  }}>
-                                
+
                                 {/* Magical sparkles around modal */}
                                 {[...Array(8)].map((_, i) => (
                                     <div
@@ -616,7 +691,7 @@ function MaraudersMap() {
                             }`}
                             style={{
                                 border: '4px solid #8B4513',
-                                boxShadow: isMapActive 
+                                boxShadow: isMapActive
                                     ? '0 0 40px rgba(255, 215, 0, 0.5), inset 0 0 20px rgba(139, 69, 19, 0.3)'
                                     : 'none'
                             }}
@@ -632,155 +707,9 @@ function MaraudersMap() {
                                 </div>
                             )}
                         </div>
-                        
-                        {/* Decorative map corners when active */}
-                        {isMapActive && (
-                            <>
-                                <div className="absolute -top-2 -left-2 text-2xl animate-bounce">🗺️</div>
-                                <div className="absolute -top-2 -right-2 text-2xl animate-bounce" style={{animationDelay: '0.5s'}}>🏰</div>
-                                <div className="absolute -bottom-2 -left-2 text-2xl animate-bounce" style={{animationDelay: '1s'}}>🌟</div>
-                                <div className="absolute -bottom-2 -right-2 text-2xl animate-bounce" style={{animationDelay: '1.5s'}}>🔮</div>
-                            </>
-                        )}
                     </div>
-
-                    {/* Location information with magical styling */}
-                    {isMapActive && (
-                        <div className="mt-8 space-y-6">
-                            {/* Current location display */}
-                            <div className="p-6 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-lg border-2 border-blue-300 shadow-lg">
-                                <div className="flex items-center justify-center gap-3 mb-2">
-                                    <span className="text-2xl">📍</span>
-                                    <h3 className="text-xl font-bold text-blue-900 font-serif">Your Magical Coordinates</h3>
-                                    <span className="text-2xl">📍</span>
-                                </div>
-                                <p className="text-blue-800 font-mono text-lg">
-                                    {currentLocation 
-                                        ? `Latitude: ${currentLocation.latitude.toFixed(6)} | Longitude: ${currentLocation.longitude.toFixed(6)}` 
-                                        : 'Divining your position in the magical realm...'}
-                                </p>
-                            </div>
-
-                            {/* Other users section */}
-                            <div className="p-6 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border-2 border-purple-300 shadow-lg">
-                                <div className="flex items-center justify-center gap-3 mb-4">
-                                    <span className="text-2xl">👥</span>
-                                    <h3 className="text-2xl font-bold text-purple-900 font-serif">Fellow Marauders</h3>
-                                    <span className="text-2xl">👥</span>
-                                </div>
-                                
-                                {Object.keys(otherUsersLocations).length === 0 ? (
-                                    <div className="text-center p-4">
-                                        <div className="text-4xl mb-3">🌙</div>
-                                        <p className="text-purple-700 font-serif italic text-lg">
-                                            The corridors are empty... No other souls wander these magical halls at this moment.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {Object.values(otherUsersLocations).map(user => (
-                                            <div 
-                                                key={user.userId} 
-                                                className="flex items-center justify-between p-4 bg-white/80 rounded-lg border border-purple-200 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-xl">
-                                                        {user.userId === 'HogwartsCastle' ? '🏰' : '🧙‍♂️'}
-                                                    </span>
-                                                    <span className="font-bold text-purple-800 text-lg">
-                                                        {user.name || `Mysterious Wizard ${user.userId.substring(0, 8)}`}
-                                                    </span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-sm text-purple-600 font-mono">
-                                                        {user.latitude.toFixed(4)}, {user.longitude.toFixed(4)}
-                                                    </div>
-                                                    <div className="text-xs text-purple-500 italic">
-                                                        {user.userId === 'HogwartsCastle' ? 'Ancient Castle' : 'Wandering Soul'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Magical footer */}
-                            <div className="text-center p-4 bg-gradient-to-r from-amber-200 to-yellow-200 rounded-lg border border-amber-400">
-                                <p className="text-amber-900 font-serif italic text-sm">
-                                    "The map never lies... but it doesn't always tell the whole truth."
-                                </p>
-                                <div className="flex justify-center gap-2 mt-2">
-                                    <span className="text-lg animate-pulse">✨</span>
-                                    <span className="text-lg animate-pulse" style={{animationDelay: '0.5s'}}>🪄</span>
-                                    <span className="text-lg animate-pulse" style={{animationDelay: '1s'}}>✨</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Inactive state message */}
-                    {!isMapActive && (
-                        <div className="text-center p-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg border-2 border-gray-400 shadow-inner">
-                            <div className="text-6xl mb-4 opacity-50">📜</div>
-                            <p className="text-gray-700 font-serif text-xl italic">
-                                The parchment appears blank to untrained eyes...
-                            </p>
-                            <p className="text-gray-600 font-serif text-sm mt-2">
-                                Speak the ancient words to reveal its secrets
-                            </p>
-                        </div>
-                    )}
                 </div>
             </div>
-
-            {/* Floating magical elements */}
-            <div className="fixed bottom-4 right-4 space-y-2 pointer-events-none">
-                <div className="text-2xl animate-bounce opacity-70">🦉</div>
-                <div className="text-xl animate-pulse opacity-70">📚</div>
-                <div className="text-lg animate-spin opacity-70" style={{animationDuration: '3s'}}>⭐</div>
-            </div>
-
-            {/* Custom CSS for additional animations */}
-            <style jsx>{`
-                @keyframes twinkle {
-                    0%, 100% { opacity: 0.3; transform: scale(1); }
-                    50% { opacity: 1; transform: scale(1.2); }
-                }
-                
-                .animate-twinkle {
-                    animation: twinkle var(--duration) ease-in-out infinite;
-                }
-
-                @keyframes float {
-                    0%, 100% { transform: translateY(0px) rotate(0deg); }
-                    33% { transform: translateY(-10px) rotate(2deg); }
-                    66% { transform: translateY(5px) rotate(-1deg); }
-                }
-
-                .animate-float {
-                    animation: float 6s ease-in-out infinite;
-                }
-
-                /* Custom scrollbar */
-                ::-webkit-scrollbar {
-                    width: 8px;
-                }
-                
-                ::-webkit-scrollbar-track {
-                    background: #f1f1f1;
-                    border-radius: 10px;
-                }
-                
-                ::-webkit-scrollbar-thumb {
-                    background: #8B4513;
-                    border-radius: 10px;
-                }
-                
-                ::-webkit-scrollbar-thumb:hover {
-                    background: #A0522D;
-                }
-            `}</style>
         </div>
     );
 }

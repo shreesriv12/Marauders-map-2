@@ -8,7 +8,7 @@ import {
   Wand2,
   Crown,
   Heart,
-  BookOpen,
+  BookOpen, // Used for the Diary button
   Shield,
   Sparkles,
   LogOut,
@@ -26,7 +26,7 @@ import {
   HandHelping,
   Newspaper,
   MessageSquareText,
-  FlaskConical, // Import FlaskConical icon for the potion game button
+  FlaskConical,
 } from 'lucide-react';
 import useRegistrationStore from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
@@ -276,24 +276,25 @@ const WizardDashboard = () => {
     navigate('/daily-prophet');
   };
 
-  // Handler for navigating to Ask Librarian AI Chatbot page
   const handleGoToLibrarianChat = () => {
     navigate('/ask-librarian');
   };
 
-  // Handler for navigating to Marauder's Map page
   const handleGoToMaraudersMap = () => {
     navigate('/maraudersmap');
   };
 
-  // NEW: Handler for navigating to Potion Brewing Game page
   const handleGoToPotionBrewingGame = () => {
-    navigate('/potion-brewing-game'); // Ensure this matches your route path for the game
+    navigate('/potion-brewing-game');
   };
 
-  // NEW: Handler for navigating to the Chats page
   const handleGoToChats = () => {
-    navigate('/chats'); // This should match the route for your ChatPage.jsx
+    navigate('/chats');
+  };
+
+  // NEW: Handler for navigating to Tom Riddle's AI Diary
+  const handleGoToDiary = () => {
+    navigate('/diary'); // Route to the Diary component
   };
 
 
@@ -419,7 +420,8 @@ const WizardDashboard = () => {
               { id: 'ask-librarian', label: 'Ask Librarian AI', icon: MessageSquareText, handler: handleGoToLibrarianChat },
               { id: 'transfiguration', label: 'Transfiguration', icon: Wand2, handler: () => navigate('/transfiguration-booth') },
               { id: 'potion-brew', label: 'Potion Brew Game', icon: FlaskConical, handler: handleGoToPotionBrewingGame },
-              { id: 'chats', label: 'Chats', icon: MessageSquareText, handler: handleGoToChats } // NEW BUTTON ADDED HERE
+              { id: 'chats', label: 'Chats', icon: MessageSquareText, handler: handleGoToChats },
+              { id: 'diary', label: 'Tom Riddle\'s Diary', icon: BookOpen, handler: handleGoToDiary } // NEW BUTTON ADDED HERE
             ].map(({ id, label, icon: Icon, handler }) => (
               <button
                 key={id}
@@ -652,7 +654,7 @@ const WizardDashboard = () => {
 
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border-2 border-yellow-300">
-                    <h3 className="text-xl font-bold text-yellow-700 mb-4">🦉 O.W.L.S Received</h3>
+                    <h3 className="text-xl font-bold text-yellow-700 mb-4">� O.W.L.S Received</h3>
                     <div className="text-center">
                       <div className="text-4xl font-bold text-yellow-600 mb-2">{user.owlsReceived}</div>
                       <p className="text-yellow-600">Outstanding Work Letters</p>
@@ -715,79 +717,77 @@ const WizardDashboard = () => {
             {/* Daily Prophet */}
             <div className="bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl shadow-xl border-4 border-gray-400 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-800">🗞️ The Daily Prophet</h3>
+                <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                  <Newspaper className="h-6 w-6 mr-2 text-gray-600" />
+                  The Daily Prophet
+                </h3>
                 <button
                   onClick={handleGoToDailyProphet}
-                  className="bg-gradient-to-r from-stone-500 to-gray-500 hover:from-stone-600 hover:to-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300"
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-1 px-3 rounded-full text-sm transition-all duration-300"
                 >
                   Read More
                 </button>
               </div>
-              <p className="text-gray-700 text-sm mb-4">
-                "Ministry Confirms Breakthrough in Charm Reversal! Details on page 3."
+              <p className="text-gray-600 text-sm mb-4">
+                Latest headlines from the wizarding world.
               </p>
-              <div className="flex items-center justify-between text-gray-600 text-sm">
-                <span>Published: {formatDate(new Date().toISOString())}</span>
-                <span>Edition: Daily</span>
-              </div>
+              <ul className="space-y-2 text-gray-700 text-sm">
+                <li>• Quidditch World Cup Qualifiers Announced!</li>
+                <li>• Ministry Issues New Decree on Underage Magic</li>
+                <li>• Gringotts Vaults See Record Deposits</li>
+              </ul>
             </div>
 
-            {/* Quick Actions */}
-            <div className="bg-gradient-to-br from-purple-100 to-pink-50 rounded-2xl shadow-xl border-4 border-purple-400 p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={handleGoToHandTracking}
-                  className="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-purple-300 text-purple-700 font-semibold"
-                >
-                  <Wand2 className="h-6 w-6 mb-2" />
-                  <span>Practice Spells</span>
-                </button>
-                <button
-                  onClick={handleGoToMaraudersMap}
-                  className="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-purple-300 text-purple-700 font-semibold"
-                >
-                  <MapPin className="h-6 w-6 mb-2" />
-                  <span>Marauder's Map</span>
-                </button>
-                <button
-                  onClick={handleGoToLibrarianChat}
-                  className="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-purple-300 text-purple-700 font-semibold"
-                >
-                  <HandHelping className="h-6 w-6 mb-2" />
-                  <span>Ask Librarian AI</span>
-                </button>
-                <button
-                  onClick={handleGoToPotionBrewingGame}
-                  className="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-purple-300 text-purple-700 font-semibold"
-                >
-                  <FlaskConical className="h-6 w-6 mb-2" />
-                  <span>Potion Brewing</span>
-                </button>
-                <button
-                  onClick={handleGoToChats} // New button for Chats
-                  className="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-2 border-purple-300 text-purple-700 font-semibold"
-                >
-                  <MessageSquareText className="h-6 w-6 mb-2" />
-                  <span>Chats</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Hogwarts Weather */}
-            {weather && (
-              <div className="bg-gradient-to-br from-blue-100 to-cyan-50 rounded-2xl shadow-xl border-4 border-blue-400 p-6 text-center">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">☁️ Hogwarts Weather</h3>
-                <div className="flex items-center justify-center space-x-4 mb-4">
-                  {getWeatherIcon(weather.icon)}
-                  <div>
-                    <p className="text-3xl font-bold text-blue-700">{weather.temperature}</p>
-                    <p className="text-lg text-blue-600">{weather.condition}</p>
+            {/* Weather Widget */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl border-4 border-blue-400 p-6 text-center">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-center">
+                <Cloud className="h-6 w-6 mr-2 text-blue-600" />
+                Hogwarts Weather
+              </h3>
+              {weather ? (
+                <div>
+                  <div className="flex items-center justify-center mb-2">
+                    {getWeatherIcon(weather.icon)}
+                    <span className="text-5xl font-bold text-blue-700 ml-3">
+                      {weather.temperature}
+                    </span>
                   </div>
+                  <p className="text-blue-600 text-lg font-semibold mb-2">
+                    {weather.condition}
+                  </p>
+                  <p className="text-gray-600 text-sm">{weather.description}</p>
                 </div>
-                <p className="text-gray-600 text-sm">{weather.description}</p>
-              </div>
-            )}
+              ) : (
+                <p className="text-gray-600">Fetching weather...</p>
+              )}
+            </div>
+
+            {/* Quick Links / Actions */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-xl border-4 border-purple-400 p-6 space-y-4">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
+              <button
+                onClick={handleGoToHandTracking}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center shadow-md"
+              >
+                <HandHelping className="h-5 w-5 mr-2" />
+                Practice Spells (Hand Tracking)
+              </button>
+              <button
+                onClick={handleGoToLibrarianChat}
+                className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center shadow-md"
+              >
+                <MessageSquareText className="h-5 w-5 mr-2" />
+                Ask Librarian AI
+              </button>
+              {/* NEW: Tom Riddle's Diary Button in Quick Actions */}
+              <button
+                onClick={handleGoToDiary}
+                className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center shadow-md"
+              >
+                <BookOpen className="h-5 w-5 mr-2" />
+                Tom Riddle's AI Diary
+              </button>
+            </div>
           </div>
         </div>
       </div>

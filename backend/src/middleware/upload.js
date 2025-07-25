@@ -3,7 +3,6 @@ import streamifier from 'streamifier';
 import cloudinary from '../utils/cloudinary.js'; // Path to your Cloudinary config
 
 // Configure Multer to store files in memory (buffer)
-// This is necessary when streaming to Cloudinary directly from memory.
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
@@ -21,6 +20,8 @@ const uploadToCloudinary = async (buffer) => {
         if (result) {
           resolve(result.secure_url); // Resolve with the secure URL
         } else {
+          // Log the Cloudinary error here for better debugging
+          console.error('Cloudinary upload stream error:', error);
           reject(error); // Reject with the error
         }
       }
