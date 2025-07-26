@@ -88,7 +88,7 @@
 
 
 ---
-##  Team Name- MARAUDERS MAP 2
+##  Team Name- THE MARAUDERS 2
 
 ---
 ---
