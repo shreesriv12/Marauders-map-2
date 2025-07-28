@@ -96,7 +96,6 @@
 - **Shreeya Srivastava**  
 - **Ashish Singh**  
 - **Nikhil Yadav**  
-- **Ayush Jadaun**
 
 ---
 
