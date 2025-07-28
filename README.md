@@ -2,8 +2,6 @@
 
 > A magical, AI-powered digital platform that fuses **3D experiences**, **real-time gameplay**, **personality-driven sorting**, and **cutting-edge AI tools** to bring Hogwarts to life like never before.
 
-🏆 **Built for: Triwizardathon 1.0 Hackathon**
-
 ---
 
 ## 🎯 Vision
